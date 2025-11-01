@@ -2,7 +2,7 @@
 [ExpantaNum.js](https://github.com/Naruyoko/ExpantaNum.js) ported to Roblox (10{{1}}1.79e308 limit)
 
 ## How to load
-1. Create a module
+1. Create a ModuleScript
 <sup>1.1. Name it Stand Proud Ron /j</sup>
 2. Copy the [code](https://github.com/prokingnoob2513/ExpantaNum.luau/blob/main/ExpantaNum.luau)
 or [get the model](https://create.roblox.com/store/asset/114410057383638/ExpantaNum)
