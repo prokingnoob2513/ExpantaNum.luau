@@ -18,3 +18,4 @@ Functions: correct, fromNumber, toNumber, toDisplay, toString, fromString, toExp
 number library, big number, big num, bignumber, bignum, big integer, biginteger, bigint, incremental games, idle games, large numbers, huge numbers, googology, roblox, luau
 <br>
 # [Follow me on Roblox!](https://www.roblox.com/users/1314031137/profile)
+thank you -{✶ Kappa2025 ✶}- (@kappaofcl on discord) for advertising!!!
