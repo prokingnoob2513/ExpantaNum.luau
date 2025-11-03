@@ -1855,7 +1855,7 @@ function ExpantaNum.lbencode(onum)
 		cnum += math.log10((onum[4] + (math.log10(onum[3]+1) / 16) + 1)) * 6.26775e14
 		return sign * cnum
 	elseif amo == 5 then
-		-- mode 11: I Do Not Know
+		-- mode 11: man shut yo-
 		local cnum = 1.1e17
 		cnum += math.log10((onum[5] + (math.log10(onum[4]+1) / 16) + 1)) * 6.26775e14
 		return sign * cnum
@@ -1865,11 +1865,16 @@ function ExpantaNum.lbencode(onum)
 		cnum += math.log10((onum[amo] + (math.log10(onum[amo - 1]+1) / 16) + 1)) * 6.26775e14
 		return sign * cnum
 	else
+   -- modes to be added:
+   -- 12: Become Meta (layer == 1)
+   -- 13: Too Big (2 <= layer <= 9223372036854775808)
+   -- 14: ABSOLUTE TERRITORY (layer > 9223372036854775808)
 		return sign * 9223372036854775808
 	end
 end
 
 function ExpantaNum.lbdecode(int)
+  -- man
 	if int == 0 then return {1, {0}} end
 	local sign = math.sign(int)
 	int = math.abs(int)
@@ -2036,7 +2041,7 @@ function commas(Value): string
 		end
 		return String
 	else
-		return "dih"
+		return "unsupported"
 	end
 end
 
