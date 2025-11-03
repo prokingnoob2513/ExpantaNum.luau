@@ -1855,7 +1855,7 @@ function ExpantaNum.lbencode(onum)
 		cnum += math.log10((onum[4] + (math.log10(onum[3]+1) / 16) + 1)) * 6.26775e14
 		return sign * cnum
 	elseif amo == 5 then
-		-- mode 11: I Do Not Konw
+		-- mode 11: I Do Not Know
 		local cnum = 1.1e17
 		cnum += math.log10((onum[5] + (math.log10(onum[4]+1) / 16) + 1)) * 6.26775e14
 		return sign * cnum
@@ -2036,7 +2036,7 @@ function commas(Value): string
 		end
 		return String
 	else
-		return "9,999,999,999,999,999,999,999,999,999+"
+		return "dih"
 	end
 end
 
