@@ -1,3 +1,5 @@
+--!optimize 2
+--!native
 --[[
 	Original OmegaNum script: @FoundForces
 	expantanum: prokingnoob2513 (limit: 10{{1}}1.79e308)
@@ -23,7 +25,7 @@ cmp
 max 
 min 
 log10 
-isint 
+isint
 recip 
 pow 
 mod 
@@ -87,12 +89,13 @@ local INF = math.huge
 local pi = math.pi
 local ZERO: ExpantaNum = {1,{0},0,0}
 local ONE: ExpantaNum = {1,{1},0,0}
-local maxSuffix: ExpantaNum = {1,{maxInt,1},0,0}
-local maxADD = "e" .. maxInt
-local maxScientific = "eeee300008"
-local maxMUL = 'ee' .. maxInt
-local maxPOW: ExpantaNum = {1,{1,maxInt},0,0}
-local maxH = math.log10(maxInt) 
+local maxSuffix: ExpantaNum = {1,{maxInt,1},1,0}
+local maxADD: ExpantaNum = {1,{maxInt,1},1,0}
+local maxMUL: ExpantaNum = {1,{maxInt,2},1,0}
+local maxScientific: ExpantaNum = {1,{300008,4},1,0}
+local maxPOW: ExpantaNum = {1,{1,maxInt},1,0}
+local maxTETR: ExpantaNum = {1,{10000000000,8,maxInt},2,0}
+local maxPENT: ExpantaNum = {1,{10000000000,8,8,maxInt},3,0}
 local maxOPS = 420 -- max N elements in array, 420 recommended for speed
 
 local ExpantaNum = {}
@@ -347,6 +350,7 @@ function Number:abs() return setmetatable(ExpantaNum.abs(self), Number) end
 function Number:neg() return setmetatable(ExpantaNum.neg(self), Number) end
 function Number:max(n) return setmetatable(ExpantaNum.max(self, n), Number) end
 function Number:min(n) return setmetatable(ExpantaNum.min(self, n), Number) end
+
 function Number:log10() return setmetatable(ExpantaNum.log10(self), Number) end
 function Number:isint() return setmetatable(ExpantaNum.isint(self), Number) end
 function Number:recip() return setmetatable(ExpantaNum.recip(self), Number) end
@@ -355,6 +359,7 @@ function Number:mod(n) return setmetatable(ExpantaNum.mod(self, n), Number) end
 function Number:root(n) return setmetatable(ExpantaNum.root(self, n), Number) end
 function Number:floor() return setmetatable(ExpantaNum.floor(self), Number) end
 function Number:ceil() return setmetatable(ExpantaNum.ceil(self), Number) end
+
 function Number:sqrt() return setmetatable(ExpantaNum.sqrt(self), Number) end
 function Number:log(n) return setmetatable(ExpantaNum.log(self, n), Number) end
 function Number:exp() return setmetatable(ExpantaNum.exp(self), Number) end
@@ -362,13 +367,17 @@ function Number:maxabs(n) return setmetatable(ExpantaNum.maxabs(self, n), Number
 function Number:pow10() return setmetatable(ExpantaNum.pow10(self), Number) end
 function Number:gamma() return setmetatable(ExpantaNum.gamma(self), Number) end
 function Number:fact() return setmetatable(ExpantaNum.fact(self), Number) end
+
 function Number:rand(n) return setmetatable(ExpantaNum.rand(self,n), Number) end
 function Number:exporand(n) return setmetatable(ExpantaNum.exporand(self,n), Number) end
 function Number:lambertw() return setmetatable(ExpantaNum.lambertw(self), Number) end
+
 function Number:slog(n) return setmetatable(ExpantaNum.slog(self, n), Number) end
 function Number:pentlog(n) return setmetatable(ExpantaNum.pentlog(self, n), Number) end
 function Number:tetrate(n) return setmetatable(ExpantaNum.tetrate(self, n), Number) end
+function Number:tetr(n) return setmetatable(ExpantaNum.tetrate(self, n), Number) end
 function Number:pentate(n) return setmetatable(ExpantaNum.pentate(self, n), Number) end
+function Number:pent(n) return setmetatable(ExpantaNum.pentate(self, n), Number) end
 function Number:arrow(a, y) return setmetatable(ExpantaNum.arrow(self, a, y), Number) end
 
 --[[
@@ -1524,87 +1533,90 @@ function ExpantaNum.lambertw(x): ExpantaNum
 	return Hlambertw(x)
 end
 
--- might revamp (x -> r)
 function ExpantaNum.slog(r,base): ExpantaNum
-	local x = copytab(ExpantaNum.correct(r))
+	r = ExpantaNum.correct(r)
 	base = ExpantaNum.toExpanta(base)
-	if ExpantaNum.le(x, ZERO) then return {-1,{1},0,0} end
-	if ExpantaNum.eq(x,ONE) then return ZERO end
-	if ExpantaNum.eq(x,base) then return ONE end
-	if ExpantaNum.le(base, math.exp(1/2.7182818284)) then return x end
-	if ExpantaNum.me(ExpantaNum.max(x,base),{1,{10000000000, 8, maxInt},2,0}) then
-		if ExpantaNum.me(x,base) then return x end
+	if r[1] == -1 then return {-1,{1},0,0} end
+	if ExpantaNum.eq(r,ONE) then return ZERO end
+	if ExpantaNum.eq(r,base) then return ONE end
+	if ExpantaNum.le(base, math.exp(1/2.7182818284)) then return r end
+	if ExpantaNum.me(ExpantaNum.max(r,base), maxTETR) then
+		if ExpantaNum.me(r,base) then return r end
 		return ZERO
 	end
-	if ExpantaNum.me(ExpantaNum.max(x,base), maxPOW) then
-		if ExpantaNum.me(x,base) then
-			x[2][3] -= 1
-			return ExpantaNum.sub(x,x[2][2])
+	if ExpantaNum.me(ExpantaNum.max(r,base), maxPOW) then
+		if ExpantaNum.me(r,base) then
+			r[2][3] -= 1
+			return ExpantaNum.sub(r,r[2][2])
 		end
 		return ZERO
 	end
-	local q =0
-	local t = (x[2][2] or 0) - (base[2][2] or 0)
+	local q = 0
+	local t = (r[2][2] or 0) - (base[2][2] or 0)
 	if t>3 then
 		local p = t-3
 		q += p
-		x[2][2] -= p
+		r[2][2] -= p
 	end
 	for i=1,99 do
-		if ExpantaNum.le(x, ZERO) then
-			x = ExpantaNum.pow(base,x)
+		if r[1] == -1 then
+			r = ExpantaNum.pow(base,r)
 			q-=1
-		else if ExpantaNum.leeq(x,1) then
-				return ExpantaNum.toExpanta(q+ExpantaNum.toNumber(x)-1)	
+		else
+			if ExpantaNum.leeq(r,ONE) then
+				return ExpantaNum.toExpanta(q+ExpantaNum.toNumber(r)-1)	
 			else 
 				q += 1
-				x = ExpantaNum.log(x,base)
+				r = ExpantaNum.log(r,base)
 			end
 		end
 	end
-	if ExpantaNum.me(x, 10) then
+	if ExpantaNum.me(r, 10) then
 		return q
 	end
 end
 
--- TODO: pentlog
---[[
-if none of those then im guessing the expantanum uses the [16,1,1] as 10^^1e16 if yes then take the last thing which is 1 and then add that with the penta-log of the previous which is [16,1] so 1+penta-log([16,1])=1+1.3182031560428635=2.3182031560428635
-and so penta-log([62346,347,4])=4+penta-log([62346,347])=4+2.147753180598749=6.147753180598749 and you can check this with 10^^^6.147753180598749 which is (10^^)^4 (10^)^347 62346= [62346,347,4]
-but if its more than 4 elements so like [16,1,1,1] then just remove 1 from the last so its [16,1,1,1-1]=[16,1,1] and thats the result so like penta-log([37647, 6346, 346, 5])=[37647, 6346, 346, 5-1]=[37647, 6346, 346, 4]
-and lastly if its 5 elements its too large so just return the same thing what you put in there so like [16,1,1,1,1]=[16,1,1,1,1] (the same)
-]]
-
-function ExpantaNum.pentlog(r,base):ExpantaNum
-	-- base modifying later
+function ExpantaNum.pentlog(r,base): ExpantaNum
 	r = ExpantaNum.correct(r)
-	base = 10
-	if ExpantaNum.le(r,ZERO) then return {-1,{1},0,0} end
+	base = ExpantaNum.toExpanta(base)
+	if r[1] == -1 then return {-1,{1},0,0} end
 	if ExpantaNum.eq(r,ONE) then return ZERO end
 	if ExpantaNum.eq(r,base) then return ONE end
 	if ExpantaNum.le(base, math.exp(1/2.7182818284)) then return r end
-	
-	if ExpantaNum.leeq(r, {1,{10},0,0}) then return ExpantaNum.log10(r) end
-	if ExpantaNum.leeq(r, {1,{10,10},1,0}) then
-		return ExpantaNum.add(ExpantaNum.slog(ExpantaNum.log10(r),10), 1)
+	if ExpantaNum.me(ExpantaNum.max(r,base), maxPENT) then
+		if ExpantaNum.me(r,base) then return r end
+		return ZERO
 	end
-	if ExpantaNum.leeq(r, {1,{10,maxInt},1,0}) then
-		return ExpantaNum.add(ExpantaNum.log10(ExpantaNum.slog(ExpantaNum.slog(r,10),10)), 2)
-	end
-	if r[3] == 2 and r[4] == 0 then
-		local s = r[2][3]
-		table.remove(r[2])
-		return ExpantaNum.add(ExpantaNum.pentlog(r, 10), s)
-	end
-	if r[3] == 3 and r[4] == 0 then
-		if r[2][4] == 1 then
-			table.remove(r[2])
-			return ExpantaNum.correct(r)
+	if ExpantaNum.me(ExpantaNum.max(r,base), maxTETR) then
+		if ExpantaNum.me(r,base) then
+			r[2][4] -= 1
+			return ExpantaNum.sub(r,r[2][3])
 		end
-		r[2][4] -= 1
-		return ExpantaNum.correct(r)
+		return ZERO
 	end
-	return r
+	local q = 0
+	local t = (r[2][3] or 0) - (base[2][3] or 0)
+	if t>3 then
+		local p = t-3
+		q += p
+		r[2][3] -= p
+	end
+	for i=1,99 do
+		if r[1] == -1 then
+			r = ExpantaNum.tetr(base,r)
+			q -= 1
+		else
+			if ExpantaNum.leeq(r,ONE) then
+				return ExpantaNum.toExpanta(q+ExpantaNum.toNumber(r)-1)	
+			else 
+				q += 1
+				r = ExpantaNum.slog(r,base)
+			end
+		end
+	end
+	if ExpantaNum.me(r, 10) then
+		return q
+	end
 end
 
 function ExpantaNum.tetrate(x,y): ExpantaNum
@@ -1695,6 +1707,10 @@ function ExpantaNum.tetrate(x,y): ExpantaNum
 	return ExpantaNum.correct(ro)
 end
 
+function ExpantaNum.tetr(x,y)
+	return ExpantaNum.tetrate(x,y) -- alias
+end
+
 function ExpantaNum.pentate(x,y): ExpantaNum
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
@@ -1779,6 +1795,10 @@ function ExpantaNum.pentate(x,y): ExpantaNum
 	end
 	ro[2][3] = ro[2][3] and ro[2][3]+fo or fo
 	return ExpantaNum.correct(ro)
+end
+
+function ExpantaNum.pent(x,y)
+	return ExpantaNum.pentate(x,y) -- alias
 end
 
 function ExpantaNum.arrow(x, y, z): ExpantaNum --oh ye (Note: a bit fixed for 0-3 arrows.)
