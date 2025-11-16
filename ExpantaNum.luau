@@ -67,7 +67,7 @@ lbdecode (soon)
 ]]
 
 local amoes = 5
-local PrecisionDisplay = 15 -- debug
+local PrecisionDisplay = 3
 local toScientific = 1e306
 local maxCommas = 7 -- Max available: 22 numbers with commas. Optimal: 6-9 number
 local maxArrows = 5 -- for toDisplay
@@ -1348,12 +1348,12 @@ function ExpantaNum.toBigNum(val)
 		return errorcorrection({val[2][1]*val[1],0})
 	end
 	if val[2][2] == 1 then
-		return errorcorrection({1*val[1],val[2][1]})
+		return errorcorrection({val[1],val[2][1]})
 	end
-	if val[2][2] == 2 and math.log10(val[2][1]) <= 308 then
-		return {1*val[1], 10^val[2][1]}
+	if val[2][2] == 2 and math.log10(val[2][1]) <= 308.2547155599167438988686282 then
+		return {val[1], 10^val[2][1]}
 	end
-	return {1*val[1], INF}
+	return {val[1], INF}
 end
 
 function ExpantaNum.toScientific(x): string
@@ -1989,29 +1989,29 @@ end
 
 ----------------------------------------------bignum part ; )
 function errorcorrection(bnum)	
-	local signal = "+"
+	local signal = 1 -- + is 1, - is 0
 	if bnum[1] == 0 then
 		return {0, 0}
 	end
 	if bnum[1] < 0 then
-		signal = "-"
+		signal = 0
 	end
-	if signal == "-" then
-		bnum[1] = bnum[1] * -1
+	if signal == 0 then
+		bnum[1] *= -1
 	end
-	local signal2 = "+"
+	local signal2 = 1
 	if bnum[2] < 0 then
-		signal2 = "-"
-		bnum[2] = bnum[2] * -1
+		signal2 = 0
+		bnum[2] *= -1
 	end
-	if math.fmod(bnum[2], 1) > 0 and signal2 == "-" then
+	if math.fmod(bnum[2], 1) > 0 and signal2 == 0 then
 		bnum[1] = bnum[1] * (10^ (1 - math.fmod(bnum[2], 1)))
 		bnum[2] = math.floor(bnum[2]) + 1
-	elseif math.fmod(bnum[2], 1) > 0 and signal2 == "+"  then
-		bnum[1] = bnum[1] * (10^  math.fmod(bnum[2], 1))
+	elseif math.fmod(bnum[2], 1) > 0 and signal2 == 1  then
+		bnum[1] = bnum[1] * (10^ math.fmod(bnum[2], 1))
 		bnum[2] = math.floor(bnum[2])
 	end
-	if signal2 == "-" then
+	if signal2 == 0 then
 		bnum[2] = bnum[2] * -1		
 	end
 	local DgAmo = math.log10(bnum[1])
@@ -2019,7 +2019,7 @@ function errorcorrection(bnum)
 	bnum[1] = bnum[1] / 10^DgAmo
 	bnum[2] = bnum[2] + DgAmo	
 	bnum[2] = math.floor(bnum[2])
-	if signal == "-" then
+	if signal == 0 then
 		bnum[1] = bnum[1] * -1		
 	end
 	return bnum
@@ -2035,10 +2035,10 @@ end
 
 function commas(Value): string
 	if Value < 1e3 then 
-		return Value
+		return math.floor(Value * 10^PrecisionDisplay)/10^PrecisionDisplay
 	end
 	local Number
-	local Formatted = math.floor(Value * 100) / 100
+	local Formatted = math.floor(Value * 10^PrecisionDisplay) / 10^PrecisionDisplay
 	if Value < 10^13 then
 		while (Number ~= 0) do
 			Formatted, Number = string.gsub(Formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
@@ -2089,18 +2089,18 @@ function commas(Value): string
 		return "unsupported"
 	end
 end
-
+-- TODO: a
 function short(bnum)
 	local SNumber0 = bnum[2]
 	local SNumber1 = bnum[1]
 	local leftover = math.fmod(SNumber0, 3)
 	local SNumber = math.floor(SNumber0 / 3) - 1
-	if SNumber <= -1 then
-		return math.floor(bnumtofloat(bnum)*100 + 0.000000001)/10^PrecisionDisplay
+	if SNumber < -1 then
+		return math.floor(bnumtofloat(bnum)*10^PrecisionDisplay + 0.000000001)/(10^PrecisionDisplay)
 	end
-	local FirstOnes = {"", "U","D","T","Qa","Qt","Sx","Sp","Oc","No"}
-	local SecondOnes = {"", "De","Vg","Tg","Qd","Qi","Se","St","Og","Ng"}
-	local ThirdOnes = {"", "Ce", "Dn","Tc","Qe","Qu","Sc","Si","Ot","Ni"}
+	local FirstOnes = {"", "U","D","T","Qd","Qn","Sx","Sp","Oc","No"}
+	local SecondOnes = {"", "Dc","Vt","Tg","qg","Qg","sg","Sg","Og","Ng"}
+	local ThirdOnes = {"", "Ce", "Du","Tr","Qa","Qi","Se","Si","Ot","Ni"}
 	local MultOnes = {"", "Mi","Mc","Na","Pc","Fm","At","Zp","Yc", "Xo", "Ve", "Me", "Due", "Tre", "Te", "Pt", "He", "Hp", "Oct", "En", "Ic", "Mei", "Dui", "Tri", "Teti", "Pti", "Hei", "Hp", "Oci", "Eni", "Tra","TeC","MTc","DTc","TrTc","TeTc","PeTc","HTc","HpT","OcT","EnT","TetC","MTetc","DTetc","TrTetc","TeTetc","PeTetc","HTetc","HpTetc","OcTetc","EnTetc","PcT","MPcT","DPcT","TPCt","TePCt","PePCt","HePCt","HpPct","OcPct","EnPct","HCt","MHcT","DHcT","THCt","TeHCt","PeHCt","HeHCt","HpHct","OcHct","EnHct","HpCt","MHpcT","DHpcT","THpCt","TeHpCt","PeHpCt","HeHpCt","HpHpct","OcHpct","EnHpct","OCt","MOcT","DOcT","TOCt","TeOCt","PeOCt","HeOCt","HpOct","OcOct","EnOct","Ent","MEnT","DEnT","TEnt","TeEnt","PeEnt","HeEnt","HpEnt","OcEnt","EnEnt","Hect", "MeHect"}
 	if bnum[2] == INF then
 		if bnum[1] < 0 then
@@ -2113,9 +2113,9 @@ function short(bnum)
 	if SNumber0 < maxCommas then
 		return commas(bnumtofloat(bnum))
 	elseif SNumber == 1 then
-		return math.floor(SNumber1 * 10^leftover * 100 + 0.000000001)/10^PrecisionDisplay .. "M"
+		return math.floor(SNumber1 * 10^leftover * 10^PrecisionDisplay + 0.000000001)/10^PrecisionDisplay .. "M"
 	elseif SNumber == 2 then
-		return math.floor(SNumber1 * 10^leftover * 100 + 0.000000001)/10^PrecisionDisplay .. "B"
+		return math.floor(SNumber1 * 10^leftover * 10^PrecisionDisplay + 0.000000001)/10^PrecisionDisplay .. "B"
 	end
 	local txt = ""	
 	local function suffixpart(n)	
@@ -2146,7 +2146,7 @@ function short(bnum)
 	end	
 	if SNumber < 1000 then
 		suffixpart(SNumber)
-		return math.floor(SNumber1 * 10^leftover * 100 + 0.000000001)/10^PrecisionDisplay .. txt
+		return math.floor(SNumber1 * 10^leftover * 10^PrecisionDisplay + 0.000000001)/10^PrecisionDisplay .. txt
 	end	
 	for i = #MultOnes,0,-1 do
 		if SNumber >= 10^(i*3) then
@@ -2158,7 +2158,7 @@ function short(bnum)
 			SNumber = math.fmod(SNumber, 10^(i*3))
 		end
 	end
-	return math.floor(SNumber1 * 10^leftover * 100 + 0.000000001)/10^PrecisionDisplay .. txt
+	return math.floor(SNumber1 * 10^leftover * 10^PrecisionDisplay + 0.000000001)/10^PrecisionDisplay .. txt
 end
 
 -- Making it easier for SamirDevs to use this for OperatorSim lol.
