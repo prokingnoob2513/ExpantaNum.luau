@@ -238,6 +238,8 @@ function Number.__le(x,y)
 	return result == -1 or result == 0
 end
 
+-- function __concat
+
 --[[
 	Just easy way to convert ExpantaNum table into required form
 	
@@ -1843,6 +1845,7 @@ function ExpantaNum.arrow(x, y, z): ExpantaNum --oh ye (Note: a bit fixed for 0-
 	return "unsupported"
 end
 
+--[[
 function ExpantaNum.lbencode(onum)
 	onum = ExpantaNum.correct(onum)
 	if ExpantaNum.eq(onum,0) then
@@ -1917,7 +1920,53 @@ function ExpantaNum.lbencode(onum)
 		return sign * 9223372036854775808
 	end
 end
+]]
 
+function ExpantaNum.lbencode(onum: ExpantaNum)
+	onum = ExpantaNum.correct(onum)
+	local approx = 6.267788e13
+	local sign = onum[1]
+	local amo = onum[3]
+	local layer = onum[4]
+	onum = onum[2]
+	if onum[2] == 0 then return 0 end
+	
+	if layer == 0 then
+		if amo == 0 then
+			return sign * math.log10(onum[1] + 1) * approx
+		elseif amo == 1 then
+			if onum[2] < 4 then
+				return sign * (math.log10(onum[1] + 1) * approx + onum[2] * 10^15)
+			elseif onum[2] < 10000 then
+				return sign * 4 * 10^15 + (math.log10(onum[1] + 1) * math.floor(approx / 10^5) + onum[2] * 10^9)
+			end
+			return sign * 5 * 10^15 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx
+		elseif amo == 2 then
+			if onum[3] < 3 then
+				return sign * (onum[3] + 5) * 10^15 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx
+			elseif onum[3] < 10000 then
+				return sign * 8 * 10^15 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * math.floor(approx / 10^5) + onum[3] * 10^9
+			end
+			return sign * 9 * 10^15 + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx
+		elseif amo == 3 then
+			return sign * 10 * 10^15 + math.log10(onum[4] + math.log10(onum[3] + 1) / 16 + 1) * approx
+		elseif amo == 4 then
+			return sign * 11 * 10^15 + math.log10(onum[5] + math.log10(onum[4] + 1) / 16 + 1) * approx
+		elseif amo < 2^53 then
+			return sign * 12 * 10^15 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx
+		end
+	end
+
+	if layer == 1 then
+		return sign * 13 * 10^15 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx
+	elseif layer < 2^53 then
+		return sign * 14 * 10^15 + math.log10(layer + math.log10(amo + 1) / 16 + 1) * approx
+	end
+
+	return sign * math.log(layer, 2) * 10^15 + math.floor(math.log10(amo + 1) * approx)
+end
+
+--[[
 function ExpantaNum.lbdecode(int)
 	-- man
 	if int == 0 then return {1, {0}} end
@@ -1984,6 +2033,50 @@ function ExpantaNum.lbdecode(int)
 			table.remove(xd)
 		end
 		return {sign, xd}
+	end
+end
+]]
+
+function ExpantaNum.lbdecode(num)
+	local approx = 6.267788e13
+	local mode = num / 1e15
+	local sign = math.sign(num)
+
+	if mode <= 1 then
+		return {
+			sign, {10 ^ (num / approx) - 1}, 0, 0
+		}
+	elseif mode <= 4 then
+		return {
+			sign, {
+				10 ^ ((num % 1e15) / approx) - 1,
+				math.floor(mode)
+			}, 1, 0
+		}
+	elseif mode <= 5 then
+		return {
+			sign, {
+				10 ^ ((num % 1e9) / math.floor(approx / 1e5)) - 1,
+				math.floor((num - math.floor(mode) * 1e15) / 1e9)
+			}, 1, 0
+		}
+	elseif mode <= 8 then
+		local exp = 10 ^ ((num % 1e15) / approx) - 1
+		local man = 10 ^ ((exp % 1) * 16)
+		if mode <= 6 then
+			return {
+				sign, {
+					man, math.floor(exp)
+				}, 1, 0
+			}
+		end
+		return {
+			sign, {
+				man,
+				math.floor(exp),
+				math.floor(mode - 5)
+			}, 2, 0
+		}
 	end
 end
 
