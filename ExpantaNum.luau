@@ -2242,4 +2242,3 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
-
