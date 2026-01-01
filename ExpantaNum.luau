@@ -1871,6 +1871,8 @@ end
 function ExpantaNum.lbencode(onum: ExpantaNum)
 	onum = ExpantaNum.correct(onum)
 	local approx = 6.267775e14
+	local lowerApprox = 6.26775e8
+	
 	local sign = onum[1]
 	local amo = onum[3]
 	local layer = onum[4]
@@ -1882,14 +1884,14 @@ function ExpantaNum.lbencode(onum: ExpantaNum)
 			return math.floor( sign * math.log10(onum[1] + 1) * approx)
 		elseif amo == 1 then
 			if onum[2] < 10000 then
-				return math.floor( sign * 4 * 10^16 + math.log10(onum[1] + 1) * math.floor(approx / 10^6) + onum[2]*10^10)
+				return math.floor( sign * 4 * 10^16 + math.log10(onum[1] + 1) * lowerApprox + onum[2]*10^10)
 			end
 			return math.floor( sign * 5 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
 		elseif amo == 2 then
 			if onum[3] < 3 then
 				return math.floor( sign * (onum[3] + 5) * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
 			elseif onum[3] < 10000 then
-				return math.floor( sign * 8 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * math.floor(approx / 10^6) + onum[3] * 10^10)
+				return math.floor( sign * 8 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * lowerApprox + onum[3] * 10^10)
 			end
 			return math.floor( sign * 9 * 10^16 + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx)
 		elseif amo == 3 then
@@ -1953,10 +1955,12 @@ end
 
 function ExpantaNum.lbdecode(num: number)
 	local approx = 6.267775e14
+	local lowerApprox = 6.26775e8
+	
 	local mode = num / 1e16
 	local sign = math.sign(num)
 	if mode >= 3 then
-		num -= 1
+		num += 1
 	end
 
 	if mode <= 1 then
@@ -1972,17 +1976,10 @@ function ExpantaNum.lbdecode(num: number)
 			}, 1, 0
 		}
 		]]
-
-	--[[
-	
-	local remainder = math.fmod(int, 1e10)
-		return fix({sign = sign, multiplicand = 10^(remainder / 6.26775e8) - 1, exponent =  math.floor((int - 4e16) / 1e10), tetrate = 0, pentate = 0, hexate = 0, heptate = 0})
-	
-	]]
 	elseif mode <= 5 then
 		return setmetatable({
 			sign, {
-				10 ^ ((num % 1e10) / math.floor(approx / 1e6)) - 1,
+				10 ^ (math.fmod(num, 1e10) / lowerApprox) - 1,
 				(num - 4e16) // 1e10
 			}, 1, 0
 		}, Number)
