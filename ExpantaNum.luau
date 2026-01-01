@@ -4,6 +4,9 @@
 	Original OmegaNum script: @FoundForces
 	expantanum: prokingnoob2513 (limit: 10{{1}}1.79e308)
 ]]
+
+------------------------------------------------ this is expantanum but pretend this is alyanum lo
+
 --[[
 Functions,
 
@@ -1867,86 +1870,11 @@ function ExpantaNum.arrow(x, y, z): ExpantaNum --oh ye (Note: a bit fixed for 0-
 	return "unsupported"
 end
 
---[[
-function ExpantaNum.lbencode(onum)
+function ExpantaNum.lbencode(onum: ExpantaNum, transferFromOmegaNum: boolean)
 	onum = ExpantaNum.correct(onum)
-	if ExpantaNum.eq(onum,0) then
-		return 0
-		-- For maximum performance, you do not need to encode 0.
-	end
-	local sign = onum[1]
-	onum = onum[2]
-	-- #onum
-	local amo = #onum 
-	-- convert to float rn??
-	if amo == 1 then
-		-- mode 0: Native Float
-		return sign * math.floor(math.log10((onum[1] + 1)) * 6.26775e14)
-	elseif amo == 2 and onum[2] < 4 then
-		-- mode 1: Native BigNum
-		-- mode 2: Native Post-BigNum
-		-- mode 3: Native EternityNum
-		return sign * (math.floor(math.log10((onum[1] + 1)) * 6.26775e14) + onum[2]*1e16)
-	elseif amo == 2 and onum[2] <= 9999 then
-		-- mode 4: Native Big EternityNum Numbers
-		local cnum = 4e16
-		cnum += math.log10((onum[1] + 1)) * 6.26775e8
-		cnum += onum[2] * 1e10
-		return sign * cnum
-	elseif amo == 2 then
-		-- mode 5: Native Extreme EternityNum Numbers
-		local cnum = 5e16
-		cnum += math.log10((onum[2] + (math.log10(onum[1]) / 16) + 1)) * 6.26775e14
-		return sign * cnum
-	elseif amo == 3 and onum[3] == 1 then
-		-- mode 6: Beyond EternityNum
-		local cnum = 6e16
-		cnum += math.log10((onum[2] + (math.log10(onum[1]) / 16) + 1)) * 6.26775e14
-		return sign * cnum
-	elseif amo == 3 and onum[3] == 2 then
-		-- mode 7: Post-EternityNum
-		local cnum = 7e16
-		cnum += math.log10((onum[2] + (math.log10(onum[1]) / 16) + 1)) * 6.26775e14
-		return sign * cnum
-	elseif amo == 3 and onum[3] < 9999 then
-		-- mode 8: Pentation Empire
-		local cnum = 8e16
-		cnum += math.log10((onum[2] + (math.log10(onum[1]) / 16) + 1)) * 6.26775e8
-		cnum += onum[3] * 1e10
-		return sign * cnum
-	elseif amo == 3 then
-		-- mode 9: Ultra Pentation
-		local cnum = 9e16
-		cnum += math.log10((onum[3] + (math.log10(onum[2]+1) / 16) + 1)) * 6.26775e14
-		return sign * cnum
-	elseif amo == 4 then
-		-- mode 10: Big Number Territory
-		local cnum = 1e17
-		cnum += math.log10((onum[4] + (math.log10(onum[3]+1) / 16) + 1)) * 6.26775e14
-		return sign * cnum
-	elseif amo == 5 then
-		-- mode 11: man shut yo-
-		local cnum = 1.1e17
-		cnum += math.log10((onum[5] + (math.log10(onum[4]+1) / 16) + 1)) * 6.26775e14
-		return sign * cnum
-	elseif amo > 5 and amo < 917 then
-		-- good until 916 arrays
-		local cnum = amo*1e16 + 6e16
-		cnum += math.log10((onum[amo] + (math.log10(onum[amo - 1]+1) / 16) + 1)) * 6.26775e14
-		return sign * cnum
-	else
-		-- modes to be added:
-		-- 12: Become Meta (layer == 1)
-		-- 13: Too Big (2 <= layer <= 9223372036854775808)
-		-- 14: ABSOLUTE TERRITORY (layer > 9223372036854775808)
-		return sign * 9223372036854775808
-	end
-end
-]]
+	transferFromOmegaNum = transferFromOmegaNum and 10 or 1
 
-function ExpantaNum.lbencode(onum: ExpantaNum)
-	onum = ExpantaNum.correct(onum)
-	local approx = 6.267788e13
+	local approx = 6.267788e13 * transferFromOmegaNum
 	local sign = onum[1]
 	local amo = onum[3]
 	local layer = onum[4]
@@ -1958,24 +1886,24 @@ function ExpantaNum.lbencode(onum: ExpantaNum)
 			return sign * math.log10(onum[1] + 1) * approx
 		elseif amo == 1 then
 			if onum[2] < 4 then
-				return sign * (math.log10(onum[1] + 1) * approx + onum[2] * 10^15)
+				return sign * (math.log10(onum[1] + 1) * approx + onum[2] * 10^15 * transferFromOmegaNum)
 			elseif onum[2] < 10000 then
-				return sign * 4 * 10^15 + (math.log10(onum[1] + 1) * math.floor(approx / 10^5) + onum[2] * 10^9)
+				return sign * 4 * 10^15 * transferFromOmegaNum + (math.log10(onum[1] + 1) * math.floor(approx / 10^5 / transferFromOmegaNum) + onum[2] * 10^9 * transferFromOmegaNum)
 			end
-			return sign * 5 * 10^15 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx
+			return sign * 5 * 10^15 * transferFromOmegaNum + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx
 		elseif amo == 2 then
 			if onum[3] < 3 then
-				return sign * (onum[3] + 5) * 10^15 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx
+				return sign * (onum[3] + 5) * 10^15 * transferFromOmegaNum + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx
 			elseif onum[3] < 10000 then
-				return sign * 8 * 10^15 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * math.floor(approx / 10^5) + onum[3] * 10^9
+				return sign * 8 * 10^15 * transferFromOmegaNum + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * math.floor(approx / 10^5 / transferFromOmegaNum) + onum[3] * 10^9 * transferFromOmegaNum
 			end
-			return sign * 9 * 10^15 + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx
+			return sign * 9 * 10^15 * transferFromOmegaNum + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx
 		elseif amo == 3 then
-			return sign * 10 * 10^15 + math.log10(onum[4] + math.log10(onum[3] + 1) / 16 + 1) * approx
+			return sign * 10 * 10^15 * transferFromOmegaNum + math.log10(onum[4] + math.log10(onum[3] + 1) / 16 + 1) * approx
 		elseif amo == 4 then
-			return sign * 11 * 10^15 + math.log10(onum[5] + math.log10(onum[4] + 1) / 16 + 1) * approx
+			return sign * 11 * 10^15 * transferFromOmegaNum + math.log10(onum[5] + math.log10(onum[4] + 1) / 16 + 1) * approx
 		elseif amo < 2^53 then
-			return sign * 12 * 10^15 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx
+			return sign * 12 * 10^15 * transferFromOmegaNum + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx
 		end
 	end
 
@@ -1990,36 +1918,6 @@ end
 
 --[[
 function ExpantaNum.lbdecode(int)
-	-- man
-	if int == 0 then return {1, {0}} end
-	local sign = math.sign(int)
-	int = math.abs(int)
-	local mode = math.floor(int / 1e16)
-	if mode>=3 then
-		int -= 1
-	end
-	if mode == 0 then
-		return {sign, {10^(int / 6.26775e14) - 1}}
-	elseif mode < 4 then
-		return {sign, {10^(math.fmod(int, 1e16) / 6.26775e14) - 1, mode}}
-	elseif mode == 4 then
-		local remainder = math.fmod(int, 1e10)
-		return {sign, {10^(remainder / 6.26775e8) - 1, math.floor((int - 4e16) / 1e10)}}
-	elseif mode == 5 then
-		local remainder = math.fmod(int, 1e16)
-		local arrows = 10^(remainder / 6.26775e14) - 1
-		local arg1 = 10^(math.fmod(arrows, 1)*16)
-		return {sign, {arg1, math.floor(arrows)}}
-	elseif mode == 6 then
-		local remainder = math.fmod(int, 1e16)
-		local arrows = 10^(remainder / 6.26775e14) - 1
-		local arg1 = 10^(math.fmod(arrows, 1)*16)
-		return {sign, {arg1, math.floor(arrows), 1}}
-	elseif mode == 7 then
-		local remainder = math.fmod(int, 1e16)
-		local arrows = 10^(remainder / 6.26775e14) - 1
-		local arg1 = 10^(math.fmod(arrows, 1)*16)
-		return {sign, {arg1, math.floor(arrows), 2}}
 	elseif mode == 8 then
 		local arg3 = math.floor((int-8e16) / 1e10)
 		local remainder = math.fmod(int, 1e10) * 1e6
@@ -2059,11 +1957,15 @@ function ExpantaNum.lbdecode(int)
 end
 ]]
 
-function ExpantaNum.lbdecode(num)
+function ExpantaNum.lbdecode(num: number, transferFromOmegaNum: boolean)
+	num = num * (transferFromOmegaNum and 10 or 1)
 	local approx = 6.267788e13
 	local mode = num / 1e15
 	local sign = math.sign(num)
-
+	if mode >= 3 then
+		num -= 1
+	end
+	
 	if mode <= 1 then
 		return {
 			sign, {10 ^ (num / approx) - 1}, 0, 0
@@ -2338,4 +2240,3 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
-
