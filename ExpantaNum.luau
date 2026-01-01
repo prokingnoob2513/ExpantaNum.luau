@@ -4,6 +4,9 @@
 	Original OmegaNum script: @FoundForces
 	expantanum: prokingnoob2513 (limit: 10{{1}}1.79e308)
 ]]
+
+------------------------------------------------ this is expantanum but pretend this is alyanum lo
+
 --[[
 Functions,
 
@@ -69,7 +72,7 @@ lbdecode (soon)
 local amoes = 5
 local PrecisionDisplay = 3
 local toScientific = 1e306
-local maxCommas = 7 -- Max available: 22 numbers with commas. Optimal: 6-9 number
+local maxCommas = 9 -- Max available: 22 numbers with commas. Optimal: 6-9 number
 local maxArrows = 5 -- for toDisplay
 local maxEs = 10
 local maxHyperions = 10 -- for hyper-E notation
@@ -248,23 +251,23 @@ end
 		
 		local number = ExpantaNum.new("[6,1]")
 		
-		print(number) --You'll get table {1,{1000000}}
+		print(number) --You'll get table {1,{1000000},0,0}
 		print(number:ToNumber()) --You'll get number 1000000
 ]]
 
-function Number:ToNumber()
+function Number:toNumber()
 	local num = self
 
 	return ExpantaNum.toNumber(num)
 end
 
-function Number:ToString()
+function Number:toString()
 	local num = self
 
 	return ExpantaNum.toString(num)
 end
 
-function Number:ToEnt(toshort: boolean)
+function Number:toEnt(toshort: boolean)
 	local num = self
 
 	if toshort then
@@ -274,7 +277,7 @@ function Number:ToEnt(toshort: boolean)
 	end
 end
 
-function Number:ToEs(toshort: boolean)
+function Number:toEs(toshort: boolean)
 	local num = self
 
 	if toshort then
@@ -284,7 +287,7 @@ function Number:ToEs(toshort: boolean)
 	end
 end
 
-function Number:ToHyperE(toshort: boolean)
+function Number:toHyperE(toshort: boolean)
 	local num = self
 
 	if toshort then
@@ -294,7 +297,7 @@ function Number:ToHyperE(toshort: boolean)
 	end
 end
 
-function Number:ToDisplay(toshort: boolean)
+function Number:toDisplay(toshort: boolean)
 	local num = self
 
 	return ExpantaNum.toDisplay(num,toshort)
@@ -316,13 +319,13 @@ function Number:Abbreviate()
 	return ExpantaNum.abbreviate(num)
 end
 
-function Number:ToExpanta()
+function Number:toExpanta()
 	local num = self
 
 	return ExpantaNum.toExpanta(num)
 end
 
-function Number:ToBigNum()
+function Number:toBigNum()
 	local num = self
 
 	return ExpantaNum.toBigNum(num)
@@ -381,6 +384,11 @@ function Number:tetr(n) return setmetatable(ExpantaNum.tetrate(self, n), Number)
 function Number:pentate(n) return setmetatable(ExpantaNum.pentate(self, n), Number) end
 function Number:pent(n) return setmetatable(ExpantaNum.pentate(self, n), Number) end
 function Number:arrow(a, y) return setmetatable(ExpantaNum.arrow(self, a, y), Number) end
+
+function Number:lt(o) return ExpantaNum.le(self, o) end
+function Number:le(o) return ExpantaNum.leeq(self, o) end
+function Number:mt(o) return ExpantaNum.me(self, o) end
+function Number:me(o) return ExpantaNum.meeq(self, o) end
 
 --[[
 	Original ExpantaNum functions
@@ -462,7 +470,6 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	if type(val) ~= 'table' then
 		return ExpantaNum.toExpanta(val)
 	end
-	if val[3] < maxOPS then val[3] = #val[2]-1 end
 	if type(val[2]) ~= "table" and #val == 4 then
 		val = {math.sign(val[1]), {val[2] + math.log10(math.abs(val[1])),1}, 1, val[4]}
 	end
@@ -474,6 +481,9 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	end
 	if (val[1] == 1 or val[1] == -1) and #val[2] == 1 and val[2][1] == 0 or  #val[2] == 2 and val[2][1] == 0  and val[2][2] == 0 then
 		return {val[1],{0},0,0} 
+	end
+	if val[3] and val[3] < maxOPS then
+		val[3] = #val[2]-1
 	end
 	-- {sign, {}, 0, 0}
 	local qq = copytab(val)
@@ -534,7 +544,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 					elseif array[i] > 1 then
 						break
 					elseif array[i] == 1 and i == len then
-						return {sign, {10}, 0, layer} 
+						return setmetatable({sign, {10}, 0, layer} , Number)
 					end
 				end 
 			end
@@ -554,7 +564,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 				end
 			end
 			if LastZero == len then
-				return {sign, {array[1]}, 0, layer} 
+				return setmetatable({sign, {array[1]}, 0, layer} , Number)
 			else
 				local Mode = 1
 				if array[1] == 1 then Mode = OneEncountered and 1 or 2 array[1] = 10 end
@@ -653,7 +663,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	qq[2] = array
 	qq[3] = last
 	qq[4] = layer
-	return qq
+	return setmetatable(qq, Number)
 end
 
 function ExpantaNum.fromNumber(val: number): ExpantaNum
@@ -661,9 +671,13 @@ function ExpantaNum.fromNumber(val: number): ExpantaNum
 		error('NAN input at fromNumber()')
 	end
 	if val == 0 then
-		return ZERO 
+		return ExpantaNum.new(ZERO)
 	end
-	return ExpantaNum.correct({math.sign(val), {math.abs(val)}, 0, 0})
+	if val < maxInt then
+		return ExpantaNum.correct({math.sign(val), {math.abs(val)}, 0, 0})
+	else
+		return ExpantaNum.correct({math.sign(val), {math.log10(val), 1}, 1, 0})
+	end
 end
 
 function ExpantaNum.toNumber(val): number
@@ -697,7 +711,7 @@ local function Decimal(val)
 	return a
 end
 
-function ExpantaNum.toDisplay(val,short): string
+function ExpantaNum.toDisplay(val,shorts): string
 	val = ExpantaNum.correct(val)
 	local sign, array, last, layer = val[1], val[2], val[3], val[4]
 	local esign, layerstr = '', ''
@@ -710,7 +724,7 @@ function ExpantaNum.toDisplay(val,short): string
 	if layer >= maxInt then
 		layerstr = "J^".. Decimal(10^(layer%1)) .. "e" .. layer//1 .. " "
 	elseif layer >= 10 then
-		if short then
+		if shorts then
 			layerstr = "J^".. short(layer) .." "
 		else
 			layerstr = "J^".. layer .." "
@@ -721,43 +735,48 @@ function ExpantaNum.toDisplay(val,short): string
 
 	--- ARRAY PART
 	if last == 0 then
-		if short then
+		if shorts then
 			return short(array[1]*sign)
 		else
 			return Decimal(array[1])*sign
 		end
-	end
-	if last == 1 then
+	elseif last == 1 then
+		if shorts and array[2] == 1 then
+			if array[1] < math.log10(maxAllowed) then
+				return short(10^array[1]*sign)
+			else
+				return short(array)
+			end
+		end
 		local base = 1
 		if math.fmod(array[1],1) ~= 0 then
 			base = 10^(array[1]-math.floor(array[1]))
 			array[1] = math.floor(array[1])
 		end
 		if array[2] > amoes then
-			if short then
+			if shorts then
 				return esign .. layerstr .. '(10^)^' .. short(array[2]-1) .. " " .. base .. 'e' .. short(array[1])
 			else
 				return esign .. layerstr .. '(10^)^' .. array[2]-1 .. " " .. base .. 'e' .. array[1]
 			end
 		end
-		if short then
+		if shorts then
 			return esign .. layerstr .. string.rep("e", array[2]-1) .. short(base) .. 'e' .. short(array[1])
 		else
 			return esign .. layerstr .. string.rep("e", array[2]-1) .. Decimal(base) .. 'e' .. array[1]
 		end
-	end
-	if last > 1 then
+	elseif last > 1 then
 		local str = ''
 		for i = #array,math.max(#array-maxArrows,2),-1 do
 			str ..= formatarrow(i, array[i] > 1)
 			if array[i] > 1 then
-				if short then str ..= short(array[i]) .. " "
+				if shorts then str ..= short(array[i]) .. " "
 				else str ..= array[i] .. " "
 				end
 			end
 		end
 		str ..= Decimal(10^(array[1]%1), PrecisionDisplay) .. 'e'
-		if short then str ..= short(array[1]//1)
+		if shorts then str ..= short(array[1]//1)
 		else str ..= array[1]//1
 		end
 		return esign .. layerstr .. str
@@ -772,8 +791,11 @@ function ExpantaNum.toString(val: ExpantaNum): string
 end
 
 function ExpantaNum.fromString(str)
-	if str == "[0]" then
-		return ZERO
+	if str == "[0];0;0" then
+		return setmetatable(ZERO, Number)
+	end
+	if tonumber(str) then
+		return ExpantaNum.new(tonumber(str))
 	end
 	if (string.find(str, 'e') or string.find(str, 'E')) and not string.find(str,"%[") then
 		local subs = string.split(str, 'e')
@@ -788,8 +810,9 @@ function ExpantaNum.fromString(str)
 			-- its scientific yk
 			local n = false
 
-
-			if subs[1]:find("-") then
+			subs[1] = tonumber(subs[1])
+			subs[2] = tonumber(subs[2])
+			if subs[1] < 0 then
 				subs[1] = math.abs(subs[1])
 				n = true
 			end
@@ -798,7 +821,7 @@ function ExpantaNum.fromString(str)
 			local second = 1
 			local sign = math.sign(first)
 			first = math.abs(first)
-			return ExpantaNum.correct({sign, {first, second}, 0, 0})
+			return ExpantaNum.new({sign, {first, second}, 1, 0})
 		else
 			-- its a e chain!
 			local second = #subs-1
@@ -807,7 +830,7 @@ function ExpantaNum.fromString(str)
 			if subs[1] == '-' then
 				sign = -1
 			end
-			return ExpantaNum.correct({sign, {tonumber(first), second}, 0, 0})
+			return ExpantaNum.new({sign, {tonumber(first), second}, 1, 0})
 		end
 	end
 
@@ -820,9 +843,9 @@ function ExpantaNum.fromString(str)
 			s = -1
 		end
 		local r = {math.sign(s or 1), t[1], tonumber(t[2]) or 0, tonumber(t[3]) or 0}
-		return ExpantaNum.correct(r)
+		return ExpantaNum.new(r)
 	else
-		return ExpantaNum.fromNumber(tonumber(str))
+		return ExpantaNum.new(tonumber(str))
 	end
 end
 
@@ -831,7 +854,7 @@ function ExpantaNum.toExpanta(val)
 		if #val < 4 then
 			val = {1, val, 0, 0}
 		end
-		return val
+		return setmetatable(val, Number)
 	end
 	if type(val) == 'number' then
 		return ExpantaNum.fromNumber(val)
@@ -943,20 +966,22 @@ end
 
 function ExpantaNum.log10(val)
 	val = ExpantaNum.new(val)
-	if ExpantaNum.eq(val , ZERO) then
-		return ZERO
+	if ExpantaNum.eq(val, ZERO) then
+		return ExpantaNum.new(ZERO)
 	end
 	local val1 = copytab(val)
 	if ExpantaNum.le(val1, 0) then return NAN end
 	if ExpantaNum.eq(val1, 0) then return -INF end
-	if ExpantaNum.leeq(val1, maxInt) then return ExpantaNum.new(ExpantaNum.fromNumber(math.log10(ExpantaNum.toNumber(val1)))) end
+	if ExpantaNum.leeq(val1, maxInt) then
+		return ExpantaNum.new(ExpantaNum.fromNumber(math.log10(ExpantaNum.toNumber(val1))))
+	end
 	val1[2][2] -= 1
 	return ExpantaNum.new(val1) 
 end
 
 function ExpantaNum.isint(val)
 	val = ExpantaNum.correct(val)
-	if val[1] ==-1 then
+	if val[1] == -1 then
 		return ExpantaNum.isint(ExpantaNum.abs(val))
 	end
 	if ExpantaNum.meeq(val, maxInt) then
@@ -1365,7 +1390,7 @@ function ExpantaNum.toScientific(x): string
 	end
 	if ExpantaNum.me(x,maxScientific) then
 		return ExpantaNum.toEs(x)
-	end
+	end -- Corresation to the time i'm working on ExpantaNum, gonna sleep rn (31/12/25 9:00:00PM)
 	if ExpantaNum.me(x, 'ee13.9') then
 		return "1e" .. ExpantaNum.toScientific(ExpantaNum.log10(x))
 	end
@@ -1930,7 +1955,7 @@ function ExpantaNum.lbencode(onum: ExpantaNum)
 	local layer = onum[4]
 	onum = onum[2]
 	if onum[2] == 0 then return 0 end
-	
+
 	if layer == 0 then
 		if amo == 0 then
 			return sign * math.log10(onum[1] + 1) * approx
@@ -2184,6 +2209,10 @@ function commas(Value): string
 end
 -- TODO: a
 function short(bnum)
+	local NOTbnum = {bnum}
+	if #NOTbnum == 1 then
+		bnum = ExpantaNum.toBigNum(bnum)
+	end
 	local SNumber0 = bnum[2]
 	local SNumber1 = bnum[1]
 	local leftover = math.fmod(SNumber0, 3)
