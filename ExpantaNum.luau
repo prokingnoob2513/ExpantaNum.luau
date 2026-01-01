@@ -5,8 +5,6 @@
 	expantanum: prokingnoob2513 (limit: 10{{1}}1.79e308)
 ]]
 
------------------------------------------------- this is expantanum but pretend this is alyanum lo
-
 --[[
 Functions,
 
@@ -2244,3 +2242,4 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
+
