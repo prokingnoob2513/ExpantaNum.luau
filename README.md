@@ -3,7 +3,6 @@
 
 ## How to load
 1. Create a ModuleScript<br>
-<sup>1.1. Name it Stand Proud Ron /j</sup>
 2. Copy the [code](https://github.com/prokingnoob2513/ExpantaNum.luau/blob/main/ExpantaNum.luau)
 or [get the model](https://create.roblox.com/store/asset/114410057383638/ExpantaNum)
 3. Add this to one of your scripts:
@@ -22,3 +21,4 @@ number library, big number, big num, bignumber, bignum, big integer, biginteger,
 <br>
 # [Follow me on Roblox!](https://www.roblox.com/users/1314031137/profile)
 thank you -{✶ Kappa2025 ✶}- (@kappaofcl on discord) for advertising!!!
+shoutout to vikis btw
