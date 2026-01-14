@@ -766,7 +766,9 @@ function ExpantaNum.toDisplay(val,shorts): string
 	elseif last > 1 then
 		local str = ''
 		for i = #array,math.max(#array-maxArrows,2),-1 do
-			str ..= formatarrow(i, array[i] > 1)
+			if i > 2 then
+				str ..= formatarrow(i, array[i] > 1)
+			end
 			if array[i] > 1 then
 				if shorts then str ..= short(array[i]) .. " "
 				else str ..= array[i] .. " "
@@ -2239,3 +2241,4 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
+
