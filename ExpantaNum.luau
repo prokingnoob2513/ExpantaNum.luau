@@ -1893,25 +1893,23 @@ function ExpantaNum.lbencode(onum: ExpantaNum)
 			end
 			return math.floor( sign * 2 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
 		elseif amo == 2 then
-			if onum[3] < 3 then
-				return math.floor( sign * (onum[3] + 2) * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
-			elseif onum[3] < 10000 then
-				return math.floor( sign * 5 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * lowerApprox + onum[3] * 10^10)
+			if onum[3] < 10000 then
+				return math.floor( sign * 3 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * lowerApprox + onum[3] * 10^10)
 			end
-			return math.floor( sign * 6 * 10^16 + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx)
+			return math.floor( sign * 4 * 10^16 + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx)
 		elseif amo == 3 then
-			return math.floor( sign * 7 * 10^16 + math.log10(onum[4] + math.log10(onum[3] + 1) / 16 + 1) * approx)
+			return math.floor( sign * 5 * 10^16 + math.log10(onum[4] + math.log10(onum[3] + 1) / 16 + 1) * approx)
 		elseif amo == 4 then
-			return math.floor( sign * 8 * 10^16 + math.log10(onum[5] + math.log10(onum[4] + 1) / 16 + 1) * approx)
+			return math.floor( sign * 6 * 10^16 + math.log10(onum[5] + math.log10(onum[4] + 1) / 16 + 1) * approx)
 		elseif amo < 2^53 then
-			return math.floor( sign * 9 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
+			return math.floor( sign * 7 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
 		end
 	end
 
 	if layer == 1 then
-		return math.floor( sign * 10 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
+		return math.floor( sign * 8 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
 	elseif layer < 2^53 then
-		return math.floor( sign * 11 * 10^16 + math.log10(layer + math.log10(amo + 1) / 16 + 1) * approx)
+		return math.floor( sign * 9 * 10^16 + math.log10(layer + math.log10(amo + 1) / 16 + 1) * approx)
 	end
 
 	return math.floor( sign * math.log(layer, 2) * 10^16 + math.floor(math.log10(amo + 1) * approx))
@@ -1972,15 +1970,6 @@ function ExpantaNum.lbdecode(num: number)
 		return setmetatable({
 			sign, {10 ^ (num / approx) - 1}, 0, 0
 		}, Number)
-	--[[
-	elseif mode <= 4 then
-		return {
-			sign, {
-				10 ^ ((num % 1e15) / approx) - 1,
-				math.floor(mode)
-			}, 1, 0
-		}
-		]]
 	elseif mode <= 2 then
 		return setmetatable({
 			sign, {
@@ -1998,7 +1987,7 @@ function ExpantaNum.lbdecode(num: number)
 				}, 1, 0
 			}, Number)
 		end
-		return setmetatable({
+		return setmetatable({ -- mode 4 when?
 			sign, {
 				man,
 				math.floor(exp),
@@ -2244,3 +2233,4 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
+
