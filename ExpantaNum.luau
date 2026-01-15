@@ -365,6 +365,7 @@ function Number:ceil() return setmetatable(ExpantaNum.ceil(self), Number) end
 
 function Number:sqrt() return setmetatable(ExpantaNum.sqrt(self), Number) end
 function Number:log(n) return setmetatable(ExpantaNum.log(self, n), Number) end
+function Number:ln() return setmetatable(ExpantaNum.log(self), Number) end
 function Number:exp() return setmetatable(ExpantaNum.exp(self), Number) end
 function Number:maxabs(n) return setmetatable(ExpantaNum.maxabs(self, n), Number) end
 function Number:pow10() return setmetatable(ExpantaNum.pow10(self), Number) end
@@ -2233,4 +2234,5 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
+
 
