@@ -1998,7 +1998,200 @@ function ExpantaNum.lbdecode(num: number)
 	end -- UNFINISHED
 end
 
-----------------------------------------------bignum part ; )
+--------------------------------------------------------------------------------------------------------------------- credit to @hamster624 for this abomination
+local decimal = 6
+local MAX_LOGP1_REPEATS = 48 -- dont change
+
+local function polarize(val, smallTop)
+	smallTop = smallTop or false
+
+	local str = tostring(ExpantaNum.correct(val))
+	local pairs = {}
+	for v in string.gmatch(str, "%d+") do
+		table.insert(pairs, tonumber(v))
+	end
+	for i = 1, 2 do table.remove(pairs) end
+	local bottom = pairs[1]
+	local top = 0
+	local height = 0
+
+	if #pairs <= 1 then
+		if smallTop then
+			while bottom >= 10 do
+				bottom = math.log10(bottom)
+				top = top + 1
+				height = 1
+			end
+		end
+	else
+		local elem = 1
+		top = pairs[2]
+		height = 1
+
+		while (bottom >= 10) or (elem < #pairs) or (smallTop and top >= 10) do
+			if bottom >= 10 then
+				if height == 1 then
+					bottom = math.log10(bottom)
+					if bottom >= 10 then
+						bottom = math.log10(bottom)
+						top = top + 1
+					end
+				elseif height < MAX_LOGP1_REPEATS then
+					if bottom >= 1e10 then
+						bottom = math.log10(math.log10(math.log10(bottom))) + 2
+					else
+						bottom = math.log10(math.log10(bottom)) + 1
+						for i = 2, height - 1 do
+							bottom = math.log10(bottom) + 1
+						end
+					end
+				else
+					bottom = 1
+				end
+				top = top + 1
+			else
+				if elem == #pairs - 1 and elem == height and not (smallTop and top >= 10) then
+					break
+				end
+				bottom = math.log10(bottom) + top
+				height = height + 1
+
+				if elem < #pairs and height > elem then
+					elem = elem + 1
+				end
+
+				if elem < #pairs then
+					if height == elem then
+						top = pairs[elem + 1] + 1
+					elseif bottom < 10 then
+						local diff = elem - height
+						if diff < MAX_LOGP1_REPEATS then
+							for _ = 1, diff-1 do
+								bottom = math.log10(bottom) + 1
+							end
+						else
+							bottom = 1
+						end
+						top = pairs[elem + 1] + 1
+					else
+						top = 1
+					end
+				else
+					top = 1
+				end
+			end
+		end
+	end
+
+	return {bottom, top, height}
+end
+local function comma_format(n)
+	local s = tostring(n)
+	return s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+end
+function regular_format(value, precision)
+	precision = precision or 0
+	return string.format("%." .. precision .. "f", value)
+end
+local function array_search(arr, y)
+	if #arr < y then return 0 end
+	return arr[y]
+end
+local function set_to_zero(arr, y)
+	arr[y] = 0
+	return arr
+end
+local function tableToString(t)
+	local result = "["
+	for i, v in ipairs(t) do
+		result = result .. tostring(v)
+		if i < #t then
+			result = result .. ", "
+		end
+	end
+	result = result .. "]"
+	return result
+end
+function ExpantaNum.letterFormat(num, decimals, small)
+	small = small or false
+	decimals = decimals or decimal
+	local precision2 = math.max(5, decimals)
+	local precision3 = math.max(4, decimals)
+	local precision4 = math.max(6, decimals)
+	local num = tostring(ExpantaNum.correct(num))
+	local arr = {}
+	for v in string.gmatch(num, "%d+") do table.insert(arr, tonumber(v)) end
+	local arr3 = table.remove(arr)
+	local arr2 = table.remove(arr)
+	if arr[1] < 0 then return "-" .. format(ExpantaNum.abs(num), decimals)
+	elseif ExpantaNum.le(num, "[0.0001];0;0") then
+		local inv = 1/ExpantaNum.toNumber(num)
+		return "1/" .. format(inv, decimals)
+	elseif ExpantaNum.le(num, "[1000];0;0") then
+		return ExpantaNum.toNumber(num)
+	elseif ExpantaNum.le(num, "[9007199254740991];0;0") then
+		return comma_format(ExpantaNum.toNumber(num))
+	elseif ExpantaNum.le(num, "[10000000000, 3];1;0") then
+		local bottom = array_search(arr, 1)
+		local rep = array_search(arr, 2) - 1
+		if bottom >= 1e9 then
+			bottom = math.log10(bottom)
+			rep = rep + 1
+		end
+		local m = 10^(bottom-math.floor(bottom))
+		local e = math.floor(bottom)
+		local p = 0
+		if bottom < 1000000 then p = precision2
+		else p = 2
+		end
+		return string.rep("e", math.floor(rep)) .. regular_format(m, p) .. "e" .. comma_format(e)
+	end
+	local pol = polarize(arr)
+	if ExpantaNum.le(num, "[10000000000, 999998];1;0") then return regular_format(pol[1], precision3) .. "F" .. comma_format(pol[2])
+	elseif ExpantaNum.le(num, "[10000000000, 8, 3];2;0") then
+		local rep = array_search(arr, 3)
+		if rep >= 1 then
+			local n_arr = set_to_zero(arr, 3)
+			return string.rep("F", math.floor(rep)) .. format(n_arr, decimals)
+		end
+		local n_val = array_search(arr, 2) + 1
+		if ExpantaNum.meeq(num, "[10, " .. n_val .."];2;0") then
+			n_val = n_val + 1
+		end
+		return "F" .. format(n_val, decimals)
+	elseif ExpantaNum.le(num, "[10000000000, 8, 999998];2;0") then return regular_format(pol[1], precision3) .. "G" .. comma_format(pol[2])
+	elseif ExpantaNum.le(num, "[10000000000, 8, 8, 3];3;0") then
+		local rep = array_search(arr, 4)
+		if rep >= 1 then
+			local n_arr = set_to_zero(arr, 4)
+			return string.rep("G", math.floor(rep)) .. format(tableToString(n_arr), decimals)
+		end
+		local n_val = array_search(arr, 3) + 1
+		if ExpantaNum.meeq(num, "[10, 0, " .. n_val .."];2;0") then
+			n_val = n_val + 1
+		end
+		return "G" .. format(n_val, decimals)
+	elseif ExpantaNum.le(num, "[10000000000, 8, 8, 999998];3;0") then return regular_format(pol[1], precision3) .. "G" .. comma_format(pol[2])
+	elseif ExpantaNum.le(num, "[10000000000, 8, 8, 8, 3];3;0") then
+		local rep = array_search(arr, 5)
+		if rep >= 1 then
+			local n_arr = set_to_zero(arr, 5)
+			return string.rep("H", math.floor(rep)) .. format(tableToString(n_arr), decimals)
+		end
+		local n_val = array_search(arr, 4) + 1
+		if ExpantaNum.meeq(num, "[10, 0, 0, " .. n_val .."];3;0") then
+			n_val = n_val + 1
+		end
+		return "H" .. format(n_val, decimals)
+	else
+		local pol = polarize(arr, true)
+		local val = math.log10(pol[1]) + pol[2]
+		local j = comma_format(arr2)
+		return regular_format(val, precision4) .. "J" .. j
+	end
+end
+
+--------------------------------------------------------------------------------------------------bignum part ; )
 function errorcorrection(bnum)	
 	local signal = 1 -- + is 1, - is 0
 	if bnum[1] == 0 then
@@ -2234,5 +2427,6 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
+
 
 
