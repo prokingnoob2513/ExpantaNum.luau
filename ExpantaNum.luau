@@ -2004,13 +2004,9 @@ local MAX_LOGP1_REPEATS = 48 -- dont change
 
 local function polarize(val, smallTop)
 	smallTop = smallTop or false
-
 	local str = tostring(ExpantaNum.correct(val))
 	local pairs = {}
-	for v in string.gmatch(str, "%d+") do
-		table.insert(pairs, tonumber(v))
-	end
-	for i = 1, 2 do table.remove(pairs) end
+	for v in (str:match("^[^;]*") or ""):gmatch("%d+%.?%d*") do table.insert(pairs, tonumber(v)) end
 	local bottom = pairs[1]
 	local top = 0
 	local height = 0
@@ -2023,71 +2019,70 @@ local function polarize(val, smallTop)
 				height = 1
 			end
 		end
-	else
-		local elem = 1
-		top = pairs[2]
-		height = 1
-
-		while (bottom >= 10) or (elem < #pairs) or (smallTop and top >= 10) do
-			if bottom >= 10 then
-				if height == 1 then
+	end
+	local elem = 1
+	top = pairs[2]
+	height = 1
+	while (bottom >= 10) or (elem < #pairs) or (smallTop and top >= 10) do
+		if bottom >= 10 then
+			if height == 1 then
+				bottom = math.log10(bottom)
+				if bottom >= 10 then
 					bottom = math.log10(bottom)
-					if bottom >= 10 then
-						bottom = math.log10(bottom)
-						top = top + 1
+					top = top + 1
+				end
+			elseif height < MAX_LOGP1_REPEATS then
+				if bottom >= 1e10 then
+					bottom = math.log10(math.log10(math.log10(bottom))) + 2
+				else
+					bottom = math.log10(math.log10(bottom)) + 1
+					for i = 2, height - 1 do
+						bottom = math.log10(bottom) + 1
 					end
-				elseif height < MAX_LOGP1_REPEATS then
-					if bottom >= 1e10 then
-						bottom = math.log10(math.log10(math.log10(bottom))) + 2
-					else
-						bottom = math.log10(math.log10(bottom)) + 1
-						for i = 2, height - 1 do
+				end
+			else
+				bottom = 1
+			end
+			top = top + 1
+		else
+			if elem == #pairs - 1 and elem == height and not (smallTop and top >= 10) then
+				break
+			end
+			bottom = math.log10(bottom) + top
+			height = height + 1
+
+			if elem < #pairs and height > elem then
+				elem = elem + 1
+			end
+
+			if elem < #pairs then
+				if height == elem then
+					top = pairs[elem + 1] + 1
+				elseif bottom < 10 then
+					local diff = elem - height
+					if diff < MAX_LOGP1_REPEATS then
+						for _ = 1, diff-1 do
 							bottom = math.log10(bottom) + 1
 						end
-					end
-				else
-					bottom = 1
-				end
-				top = top + 1
-			else
-				if elem == #pairs - 1 and elem == height and not (smallTop and top >= 10) then
-					break
-				end
-				bottom = math.log10(bottom) + top
-				height = height + 1
-
-				if elem < #pairs and height > elem then
-					elem = elem + 1
-				end
-
-				if elem < #pairs then
-					if height == elem then
-						top = pairs[elem + 1] + 1
-					elseif bottom < 10 then
-						local diff = elem - height
-						if diff < MAX_LOGP1_REPEATS then
-							for _ = 1, diff-1 do
-								bottom = math.log10(bottom) + 1
-							end
-						else
-							bottom = 1
-						end
-						top = pairs[elem + 1] + 1
 					else
-						top = 1
+						bottom = 1
 					end
+					top = pairs[elem + 1] + 1
 				else
 					top = 1
 				end
+			else
+				top = 1
 			end
 		end
 	end
 
 	return {bottom, top, height}
 end
+
 local function comma_format(n)
-	local s = tostring(n)
-	return s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+	local a,b = tostring(n):match("^(%-?%d+)(.*)$")
+	return a:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "") .. b
 end
 function regular_format(value, precision)
 	precision = precision or 0
@@ -2112,7 +2107,8 @@ local function tableToString(t)
 	result = result .. "]"
 	return result
 end
-function ExpantaNum.letterFormat(num, decimals, small)
+
+function format(num, decimals, small)
 	small = small or false
 	decimals = decimals or decimal
 	local precision2 = math.max(5, decimals)
@@ -2120,12 +2116,12 @@ function ExpantaNum.letterFormat(num, decimals, small)
 	local precision4 = math.max(6, decimals)
 	local num = tostring(ExpantaNum.correct(num))
 	local arr = {}
-	for v in string.gmatch(num, "%d+") do table.insert(arr, tonumber(v)) end
+	for v in string.gmatch(num, "-?%d+") do table.insert(arr, tonumber(v)) end
 	local arr3 = table.remove(arr)
 	local arr2 = table.remove(arr)
-	if arr[1] < 0 then return "-" .. format(ExpantaNum.abs(num), decimals)
+	if arr[1] < 0 then return "-" .. format(ExpantaNum.correct(ExpantaNum.abs(num)), decimals)
 	elseif ExpantaNum.le(num, "[0.0001];0;0") then
-		local inv = 1/ExpantaNum.toNumber(num)
+		local inv = ExpantaNum.div(1, num)
 		return "1/" .. format(inv, decimals)
 	elseif ExpantaNum.le(num, "[1000];0;0") then
 		return ExpantaNum.toNumber(num)
@@ -2146,7 +2142,7 @@ function ExpantaNum.letterFormat(num, decimals, small)
 		end
 		return string.rep("e", math.floor(rep)) .. regular_format(m, p) .. "e" .. comma_format(e)
 	end
-	local pol = polarize(arr)
+	local pol = polarize(tableToString(arr))
 	if ExpantaNum.le(num, "[10000000000, 999998];1;0") then return regular_format(pol[1], precision3) .. "F" .. comma_format(pol[2])
 	elseif ExpantaNum.le(num, "[10000000000, 8, 3];2;0") then
 		local rep = array_search(arr, 3)
@@ -2171,7 +2167,7 @@ function ExpantaNum.letterFormat(num, decimals, small)
 			n_val = n_val + 1
 		end
 		return "G" .. format(n_val, decimals)
-	elseif ExpantaNum.le(num, "[10000000000, 8, 8, 999998];3;0") then return regular_format(pol[1], precision3) .. "G" .. comma_format(pol[2])
+	elseif ExpantaNum.le(num, "[10000000000, 8, 8, 999998];3;0") then return regular_format(pol[1], precision3) .. "H" .. comma_format(pol[2])
 	elseif ExpantaNum.le(num, "[10000000000, 8, 8, 8, 3];3;0") then
 		local rep = array_search(arr, 5)
 		if rep >= 1 then
@@ -2184,11 +2180,51 @@ function ExpantaNum.letterFormat(num, decimals, small)
 		end
 		return "H" .. format(n_val, decimals)
 	else
-		local pol = polarize(arr, true)
+		local pol = polarize(tableToString(arr), true)
 		local val = math.log10(pol[1]) + pol[2]
 		local j = comma_format(arr2)
 		return regular_format(val, precision4) .. "J" .. j
 	end
+end
+local function slice(tbl, startIndex, endIndex)
+	local result = {}
+	for i = startIndex, endIndex do table.insert(result, tbl[i]) end
+	return result
+end
+function hyper_log(x, k)
+	k = ExpantaNum.toNumber(k)
+	x = tostring(ExpantaNum.correct(x))
+	local arr = {}
+	for v in x:gmatch("[-]?%d+%.?%d*") do table.insert(arr, tonumber(v)) end
+	local arr3 = table.remove(arr)
+	local arr2 = table.remove(arr)
+	if arr[1] < 0 then return "nil" -- cannot be negative
+	elseif arr3 ~= 0 then return x
+	elseif ExpantaNum.isint(k) then return "nil" -- must be an int
+	elseif k <1 then return "nil" -- because k must be >= 1
+	elseif ExpantaNum.leeq(x, 10) then return ExpantaNum.correct(math.log10(ExpantaNum.toNumber(arr))) -- dont ask me why
+	elseif k == 1 then return ExpantaNum.log10(x)
+	end
+	local arr_len = arr2+2
+	local pol = polarize(tableToString(arr), true)
+	local start = math.log10(pol[1]) + pol[2]
+	for i=1, k-pol[3]-1 do start = math.log10(start)+1 end -- godly optimization here
+	if arr_len == k+1 then return ExpantaNum.correct(ExpantaNum.toNumber(hyper_log(table.move(arr, 1, k, 1, {}), k))+ arr[k+1])-- tf is this?!?!?!?
+	elseif arr_len == k+2 then
+		local a = slice(arr, 0, k)
+		a[#a + 1] = arr[k+1]-1
+		return ExpantaNum.correct(a)
+	elseif arr_len > k+2 then return x
+	else
+		return ExpantaNum.correct(start)
+	end
+end
+
+function ExpantaNum.letterFormat(num, deci, small)
+	return format(num, deci, small)
+end
+function ExpantaNum.hyperLog10(x, arrows)
+	return hyper_log(x, arrows)
 end
 
 --------------------------------------------------------------------------------------------------bignum part ; )
@@ -2427,6 +2463,5 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
-
 
 
