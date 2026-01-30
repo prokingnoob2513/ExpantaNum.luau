@@ -3,8 +3,7 @@
 ## join my discord --> https://discord.com/invite/eAzQPyXTPc
 <br>yuh
 <br>
-\
-<br>https://cdn.discordapp.com/attachments/1406532583604355155/1466294254182731920/image.png?ex=697ce130&is=697b8fb0&hm=5449d80a6db4e133bffb3faa1a9940977d2f6a3cbece84df0393952d54dbc32a
+\\tuff
 <br>
 <br>
 
