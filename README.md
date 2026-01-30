@@ -1,6 +1,6 @@
 # ExpantaNum.luau
 [ExpantaNum.js](https://github.com/Naruyoko/ExpantaNum.js) ported to Roblox (10{{1}}1.79e308 limit)<br>
-join my discord --> https://discord.com/eAzQPyXTPc
+## join my discord --> https://discord.com/eAzQPyXTPc
 <br>yuh
 <br>
 \
