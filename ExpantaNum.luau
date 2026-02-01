@@ -1876,7 +1876,6 @@ function ExpantaNum.arrow(x, y, z): ExpantaNum --oh ye (Note: a bit fixed for 0-
 	return "unsupported"
 end
 
---[[ NEW LBENCODE
 function ExpantaNum.lbencode(onum: ExpantaNum)
 	onum = ExpantaNum.correct(onum)
 	local approx = 6.267775e14
@@ -1918,8 +1917,8 @@ function ExpantaNum.lbencode(onum: ExpantaNum)
 
 	return math.floor( sign * math.log(layer, 2) * 10^16 + math.floor(math.log10(amo + 1) * approx))
 end
-]]
-function ExpantaNum.lbencode(onum: ExpantaNum)
+
+function ExpantaNum.lbencodeOLD(onum: ExpantaNum) -- removed when PrUT actually updates the leaderboard
 	onum = ExpantaNum.correct(onum)
 	local approx = 6.267775e14
 	local lowerApprox = 6.26775e8
@@ -2003,7 +2002,7 @@ function ExpantaNum.lbdecode(int)
 	end
 end
 ]]
---[[ NEW LBDECODE
+
 function ExpantaNum.lbdecode(num: number)
 	local approx = 6.267775e14
 	local lowerApprox = 6.26775e8
@@ -2044,8 +2043,8 @@ function ExpantaNum.lbdecode(num: number)
 		}, Number)
 	end -- UNFINISHED
 end
-]]
-function ExpantaNum.lbdecode(num: number)
+
+function ExpantaNum.lbdecodeOLD(num: number) -- same thing yuh
 	local approx = 6.267775e14
 	local lowerApprox = 6.26775e8
 
@@ -2551,4 +2550,5 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
+
 
