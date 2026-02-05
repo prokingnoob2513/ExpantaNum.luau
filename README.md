@@ -1,11 +1,5 @@
 # ExpantaNum.luau
 [ExpantaNum.js](https://github.com/Naruyoko/ExpantaNum.js) ported to Roblox (10{{1}}1.79e308 limit)<br>
-## [not so secret link u click on](https://discord.com/invite/eAzQPyXTPc)
-<br>yuh
-<br>
-\\tuff
-<br>
-<br>
 
 ## How to load
 1. Create a ModuleScript<br>
