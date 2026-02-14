@@ -70,7 +70,7 @@ lbdecode (soon)
 local amoes = 5
 local PrecisionDisplay = 3
 local toScientific = 1e306
-local maxCommas = 6 -- Max available: 22 numbers with commas. Optimal: 6-9 number
+local maxCommas = 6 -- Max available: 22 numbers with commas. Optimal: 3,6,9,12 number
 local maxArrows = 5 -- for toDisplay
 local maxEs = 10
 local maxHyperions = 10 -- for hyper-E notation
@@ -97,7 +97,7 @@ local maxScientific: ExpantaNum = {1,{300008,4},1,0}
 local maxPOW: ExpantaNum = {1,{1,maxInt},1,0}
 local maxTETR: ExpantaNum = {1,{10000000000,8,maxInt},2,0}
 local maxPENT: ExpantaNum = {1,{10000000000,8,8,maxInt},3,0}
-local maxOPS = 420 -- max N elements in array, 420 recommended for speed
+local maxOPS = 69 -- max N elements in array, 69 recommended for speed
 
 local ExpantaNum = {}
 local Number = {}
@@ -351,8 +351,10 @@ function Number:mul(n) return setmetatable(ExpantaNum.mul(self,n), Number) end
 function Number:div(n) return setmetatable(ExpantaNum.div(self,n), Number) end
 function Number:abs() return setmetatable(ExpantaNum.abs(self), Number) end
 function Number:neg() return setmetatable(ExpantaNum.neg(self), Number) end
+
 function Number:max(n) return setmetatable(ExpantaNum.max(self, n), Number) end
 function Number:min(n) return setmetatable(ExpantaNum.min(self, n), Number) end
+function Number:bound(a,b) return setmetatable(ExpantaNum.bound(self, a, b), Number) end
 
 function Number:log10() return setmetatable(ExpantaNum.log10(self), Number) end
 function Number:isint() return setmetatable(ExpantaNum.isint(self), Number) end
@@ -798,7 +800,7 @@ function ExpantaNum.fromString(str)
 	if str == "[0];0;0" then
 		return setmetatable(ZERO, Number)
 	end
-	if tonumber(str) then
+	if tonumber(str) and tonumber(str) < math.huge then
 		return ExpantaNum.new(tonumber(str))
 	end
 	if (string.find(str, 'e') or string.find(str, 'E')) and not string.find(str,"%[") then
@@ -946,7 +948,6 @@ function ExpantaNum.max(val, val2)
 		return val2
 	end
 end
-
 function ExpantaNum.min(val, val2)
 	val,val2 = ExpantaNum.new(val),ExpantaNum.new(val2)
 	if ExpantaNum.me(val, val2) then
@@ -954,6 +955,9 @@ function ExpantaNum.min(val, val2)
 	else
 		return val
 	end
+end
+function ExpantaNum.bound(num, min, max)
+	return ExpantaNum.min(min, ExpantaNum.max(max, num))
 end
 
 function copytab(v: ExpantaNum)
@@ -1918,50 +1922,6 @@ function ExpantaNum.lbencode(onum: ExpantaNum)
 	return math.floor( sign * math.log(layer, 2) * 10^16 + math.floor(math.log10(amo + 1) * approx))
 end
 
-function ExpantaNum.lbencodeOLD(onum: ExpantaNum) -- removed when PrUT actually updates the leaderboard
-	onum = ExpantaNum.correct(onum)
-	local approx = 6.267775e14
-	local lowerApprox = 6.26775e8
-
-	local sign = onum[1]
-	local amo = onum[3]
-	local layer = onum[4]
-	onum = onum[2]
-	if onum[2] == 0 then return 0 end
-
-	if layer == 0 then
-		if amo == 0 then
-			return math.floor( sign * math.log10(onum[1] + 1) * approx)
-		elseif amo == 1 then
-			if onum[2] < 10000 then
-				return math.floor( sign * 4 * 10^16 + math.log10(onum[1] + 1) * lowerApprox + onum[2]*10^10)
-			end
-			return math.floor( sign * 5 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
-		elseif amo == 2 then
-			if onum[3] < 3 then
-				return math.floor( sign * (onum[3] + 5) * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
-			elseif onum[3] < 10000 then
-				return math.floor( sign * 8 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * lowerApprox + onum[3] * 10^10)
-			end
-			return math.floor( sign * 9 * 10^16 + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx)
-		elseif amo == 3 then
-			return math.floor( sign * 10 * 10^16 + math.log10(onum[4] + math.log10(onum[3] + 1) / 16 + 1) * approx)
-		elseif amo == 4 then
-			return math.floor( sign * 11 * 10^16 + math.log10(onum[5] + math.log10(onum[4] + 1) / 16 + 1) * approx)
-		elseif amo < 2^53 then
-			return math.floor( sign * 12 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
-		end
-	end
-
-	if layer == 1 then
-		return math.floor( sign * 13 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
-	elseif layer < 2^53 then
-		return math.floor( sign * 14 * 10^16 + math.log10(layer + math.log10(amo + 1) / 16 + 1) * approx)
-	end
-
-	return math.floor( sign * math.log(layer, 2) * 10^16 + math.floor(math.log10(amo + 1) * approx))
-end
-
 --[[
 function ExpantaNum.lbdecode(int)
 	elseif mode == 8 then
@@ -2039,47 +1999,6 @@ function ExpantaNum.lbdecode(num: number)
 				man,
 				math.floor(exp),
 				math.floor(mode - 2)
-			}, 2, 0
-		}, Number)
-	end -- UNFINISHED
-end
-
-function ExpantaNum.lbdecodeOLD(num: number) -- same thing yuh
-	local approx = 6.267775e14
-	local lowerApprox = 6.26775e8
-
-	local mode = num / 1e16
-	local sign = math.sign(num)
-	if mode >= 3 then
-		num += 1
-	end
-
-	if mode <= 1 then
-		return setmetatable({
-			sign, {10 ^ (num / approx) - 1}, 0, 0
-		}, Number)
-	elseif mode <= 5 then
-		return setmetatable({
-			sign, {
-				10 ^ (math.fmod(num, 1e10) / lowerApprox) - 1,
-				(num - 4e16) // 1e10
-			}, 1, 0
-		}, Number)
-	elseif mode <= 8 then
-		local exp = 10 ^ ((num % 1e16) / approx) - 1
-		local man = 10 ^ ((exp % 1) * 16)
-		if mode <= 6 then
-			return setmetatable({
-				sign, {
-					man, math.floor(exp)
-				}, 1, 0
-			}, Number)
-		end
-		return setmetatable({
-			sign, {
-				man,
-				math.floor(exp),
-				math.floor(mode - 5)
 			}, 2, 0
 		}, Number)
 	end -- UNFINISHED
@@ -2164,7 +2083,7 @@ local function polarize(val, smallTop)
 		end
 	end
 
-	return {bottom, top, height}
+	return {bottom, top, height+1}
 end
 
 local function comma_format(n)
@@ -2307,11 +2226,130 @@ function hyper_log(x, k)
 	end
 end
 
-function ExpantaNum.letterFormat(num, deci, small)
-	return format(num, deci, small)
-end
 function ExpantaNum.hyperLog10(x, arrows)
 	return hyper_log(x, arrows)
+end
+
+------------------------------ ExpantaTools™
+
+function ExpantaNum.ExpantaTools_ooms(first, last, delay)
+	-- first is the value you started with, last is what you got, time is how long it took for the calcualation (1/fps)
+	first = ExpantaNum.correct(first)
+	last = ExpantaNum.correct(last)
+
+	if ExpantaNum.eq(first, last) then return "" end
+	if ExpantaNum.me(first, last) then return nil end
+	
+	local g = ExpantaNum.add(first, ExpantaNum.div(last, 1/delay))
+	if ExpantaNum.meeq(first, "[100, 2];1;0") then
+		-- above googolplex
+		local tower = math.floor(ExpantaNum.slog(g, 10):toNumber()-1.3010299956639813)
+		local something = g[2][1]
+		table.insert(g, 1)
+		local something2 = first[2][1]
+		table.insert(first, 1)
+		
+		local oom = ExpantaNum.sub(something, something2):div(delay)
+		if ExpantaNum.meeq(oom, 1) then
+			return "+" .. ExpantaNum.short(oom) .. " OoMs^" .. tower .. "/s"
+		end
+	elseif ExpantaNum.meeq(first, "[100, 1];1;0") then
+		-- above googol
+		local oom = ExpantaNum.div(g, first):log10():div(delay)
+		if ExpantaNum.meeq(oom, 1) then
+			return "+" .. ExpantaNum.short(oom) .. " OoMs/s"
+		end
+	end
+	
+	-- default
+	return "+" .. ExpantaNum.toDisplay(ExpantaNum.sub(last, first):div(delay)) .. "/s"
+end
+function ExpantaNum.ExpantaTools_letterFormat(num, deci, small)
+	return format(num, deci, small)
+end
+
+function ExpantaNum.ExpantaTools_OldLbdecode(num: number)
+	local approx = 6.267775e14
+	local lowerApprox = 6.26775e8
+
+	local mode = num / 1e16
+	local sign = math.sign(num)
+	if mode >= 3 then
+		num += 1
+	end
+
+	if mode <= 1 then
+		return setmetatable({
+			sign, {10 ^ (num / approx) - 1}, 0, 0
+		}, Number)
+	elseif mode <= 5 then
+		return setmetatable({
+			sign, {
+				10 ^ (math.fmod(num, 1e10) / lowerApprox) - 1,
+				(num - 4e16) // 1e10
+			}, 1, 0
+		}, Number)
+	elseif mode <= 8 then
+		local exp = 10 ^ ((num % 1e16) / approx) - 1
+		local man = 10 ^ ((exp % 1) * 16)
+		if mode <= 6 then
+			return setmetatable({
+				sign, {
+					man, math.floor(exp)
+				}, 1, 0
+			}, Number)
+		end
+		return setmetatable({
+			sign, {
+				man,
+				math.floor(exp),
+				math.floor(mode - 5)
+			}, 2, 0
+		}, Number)
+	end -- UNFINISHED
+end
+function ExpantaNum.ExpantaTools_OldLbencode(onum: ExpantaNum)
+	onum = ExpantaNum.correct(onum)
+	local approx = 6.267775e14
+	local lowerApprox = 6.26775e8
+
+	local sign = onum[1]
+	local amo = onum[3]
+	local layer = onum[4]
+	onum = onum[2]
+	if onum[2] == 0 then return 0 end
+
+	if layer == 0 then
+		if amo == 0 then
+			return math.floor( sign * math.log10(onum[1] + 1) * approx)
+		elseif amo == 1 then
+			if onum[2] < 10000 then
+				return math.floor( sign * 4 * 10^16 + math.log10(onum[1] + 1) * lowerApprox + onum[2]*10^10)
+			end
+			return math.floor( sign * 5 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
+		elseif amo == 2 then
+			if onum[3] < 3 then
+				return math.floor( sign * (onum[3] + 5) * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * approx)
+			elseif onum[3] < 10000 then
+				return math.floor( sign * 8 * 10^16 + math.log10(onum[2] + math.log10(onum[1]) / 16 + 1) * lowerApprox + onum[3] * 10^10)
+			end
+			return math.floor( sign * 9 * 10^16 + math.log10(onum[3] + math.log10(onum[2] + 1) / 16 + 1) * approx)
+		elseif amo == 3 then
+			return math.floor( sign * 10 * 10^16 + math.log10(onum[4] + math.log10(onum[3] + 1) / 16 + 1) * approx)
+		elseif amo == 4 then
+			return math.floor( sign * 11 * 10^16 + math.log10(onum[5] + math.log10(onum[4] + 1) / 16 + 1) * approx)
+		elseif amo < 2^53 then
+			return math.floor( sign * 12 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
+		end
+	end
+
+	if layer == 1 then
+		return math.floor( sign * 13 * 10^16 + math.log10(amo + math.log10(onum[#onum] + 1) / 16 + 1) * approx)
+	elseif layer < 2^53 then
+		return math.floor( sign * 14 * 10^16 + math.log10(layer + math.log10(amo + 1) / 16 + 1) * approx)
+	end
+
+	return math.floor( sign * math.log(layer, 2) * 10^16 + math.floor(math.log10(amo + 1) * approx))
 end
 
 --------------------------------------------------------------------------------------------------bignum part ; )
@@ -2430,7 +2468,7 @@ function short(bnum)
 		return math.floor(bnumtofloat(bnum)*10^PrecisionDisplay + 0.000000001)/(10^PrecisionDisplay)
 	end
 	local FirstOnes = {"", "U","D","T","Qd","Qn","Sx","Sp","Oc","No"}
-	local SecondOnes = {"", "Dc","Vt","Tg","qg","Qg","sg","Sg","Og","Ng"}
+	local SecondOnes = {"", "Dc","Vg","Tg","qg","Qg","sg","Sg","Og","Ng"}
 	local ThirdOnes = {"", "Ce", "Du","Tr","Qa","Qi","Se","Si","Ot","Ni"}
 	local MultOnes = {"", "Mi","Mc","Na","Pc","Fm","At","Zp","Yc", "Xo", "Ve", "Me", "Due", "Tre", "Te", "Pt", "He", "Hp", "Oct", "En", "Ic", "Mei", "Dui", "Tri", "Teti", "Pti", "Hei", "Hp", "Oci", "Eni", "Tra","TeC","MTc","DTc","TrTc","TeTc","PeTc","HTc","HpT","OcT","EnT","TetC","MTetc","DTetc","TrTetc","TeTetc","PeTetc","HTetc","HpTetc","OcTetc","EnTetc","PcT","MPcT","DPcT","TPCt","TePCt","PePCt","HePCt","HpPct","OcPct","EnPct","HCt","MHcT","DHcT","THCt","TeHCt","PeHCt","HeHCt","HpHct","OcHct","EnHct","HpCt","MHpcT","DHpcT","THpCt","TeHpCt","PeHpCt","HeHpCt","HpHpct","OcHpct","EnHpct","OCt","MOcT","DOcT","TOCt","TeOCt","PeOCt","HeOCt","HpOct","OcOct","EnOct","Ent","MEnT","DEnT","TEnt","TeEnt","PeEnt","HeEnt","HpEnt","OcEnt","EnEnt","Hect", "MeHect"}
 	if bnum[2] == INF then
@@ -2550,5 +2588,4 @@ function ExpantaNum.abbreviate(onum): string
 end
 
 return ExpantaNum
-
 
