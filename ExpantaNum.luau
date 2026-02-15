@@ -2,7 +2,15 @@
 --!native
 --[[
 	Original OmegaNum script: @FoundForces
-	expantanum: prokingnoob2513 (limit: 10{{1}}1.79e308)
+	Limit: 10{{1}}1.79e308
+	
+	Authors:
+	@prokingnoob2513 (roblox) / @numero.sloppen (discord)
+	@vikisvikis1234 (roblox) / @the_hamster_god (discord)
+	
+	"Boring" links!
+	https://github.com/prokingnoob2513/ExpantaNum.luau/tree/main
+	https://github.com/hamster624/ExpantaNum-extended.py
 ]]
 
 --[[
@@ -2232,14 +2240,14 @@ end
 
 ------------------------------ ExpantaTools™
 
-function ExpantaNum.ExpantaTools_ooms(first, last, delay)
+function ExpantaNum.ExpantaTools_oom_difference(first, last, delay)
 	-- first is the value you started with, last is what you got, time is how long it took for the calcualation (1/fps)
 	first = ExpantaNum.correct(first)
 	last = ExpantaNum.correct(last)
 
 	if ExpantaNum.eq(first, last) then return "" end
-	if ExpantaNum.me(first, last) then return nil end
-	
+	if ExpantaNum.me(first, last) then return nil end -- TODO: add support for negative ooms
+
 	local g = ExpantaNum.add(first, ExpantaNum.div(last, 1/delay))
 	if ExpantaNum.meeq(first, "[100, 2];1;0") then
 		-- above googolplex
@@ -2248,7 +2256,7 @@ function ExpantaNum.ExpantaTools_ooms(first, last, delay)
 		table.insert(g, 1)
 		local something2 = first[2][1]
 		table.insert(first, 1)
-		
+
 		local oom = ExpantaNum.sub(something, something2):div(delay)
 		if ExpantaNum.meeq(oom, 1) then
 			return "+" .. ExpantaNum.short(oom) .. " OoMs^" .. tower .. "/s"
@@ -2260,7 +2268,7 @@ function ExpantaNum.ExpantaTools_ooms(first, last, delay)
 			return "+" .. ExpantaNum.short(oom) .. " OoMs/s"
 		end
 	end
-	
+
 	-- default
 	return "+" .. ExpantaNum.toDisplay(ExpantaNum.sub(last, first):div(delay)) .. "/s"
 end
