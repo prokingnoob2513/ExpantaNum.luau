@@ -22,6 +22,9 @@ MegotaNum.luau ({10, 1.79e308, 1, 1, 2})
 
 number library, big number, big num, bignumber, bignum, big integer, biginteger, bigint, incremental games, idle games, large numbers, huge numbers, googology, roblox, luau
 <br>
-# [Follow me on Roblox!](https://www.roblox.com/users/1314031137/profile)
-thank you -{✶ Kappa2025 ✶}- (@kappaofcl on discord) for advertising!!!
+# Notable games that use the library
+Samak's Difficulty Button Incremental V4 https://www.roblox.com/games/75807928926997/SamDBI-V4
+
+
+
 shoutout to vikis btw
