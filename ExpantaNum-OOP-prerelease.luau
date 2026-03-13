@@ -743,7 +743,7 @@ local function Decimal(val)
 end
 
 function ExpantaNum.toDisplay(val: ExpantaNum, shorts: boolean): string
-	val = ExpantaNum.correct(val)
+	val = ExpantaNum.correct(val)	
 	local sign, array, last, layer = val.sign, val.exponents, val.last, val.layer
 	local esign, layerstr = '', ''
 	if array[1] == NAN then return 'NaN' end
@@ -774,11 +774,12 @@ function ExpantaNum.toDisplay(val: ExpantaNum, shorts: boolean): string
 	elseif last == 1 then
 		if shorts and array[2] == 1 then
 			if array[1] < math.log10(maxAllowed) then
-				return short(10^array[1]*sign)
+				return esign .. short(10^array[1])
 			else
-				return short(array)
+				return esign .. short(construct_ExNum(1,array,1,0))
 			end
 		end
+		
 		local base = 1
 		if math.fmod(array[1],1) ~= 0 then
 			base = 10^(array[1]-math.floor(array[1]))
@@ -943,13 +944,15 @@ function ExpantaNum.cmp(val: ExpantaNum, val2: ExpantaNum): boolean -- 0 = eq, -
 	if V1Nan and val2 ~= val2 then return 0
 	elseif V1Nan or val2 ~= val2 then return 1
 	end
-	if val.sign == INF and val2.sign ~= INF then return val[1] end
-	if val.sign ~= INF and val2.sign == INF then return -val2[1] end
+	
+	if val.sign == 1 and val2.sign ~= 1 then return val.sign end
+	if val.sign ~= 1 and val2.sign == 1 then return -val2.sign end
+	if val.sign ~= val2.sign then return val.sign end
+	
 	if #val.exponents == 1 and val.exponents[1] == 0 and
 		#val2.exponents == 1 and val2.exponents[1] == 0 then
 		return 0
 	end
-	if val.sign ~= val2.sign then return val.sign end
 
 	if val.last < val2.last or val.layer < val2.layer then return -1 end
 	if val.last > val2.last or val.layer > val2.layer then return 1 end
@@ -1030,12 +1033,26 @@ end
 function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	val,val2 = ExpantaNum.correct(val),ExpantaNum.correct(val2)
 	local sign,sign2 = val.sign,val2.sign
-	local array,array2 = val.exponents,val2.exponents
+	--local array,array2 = val.exponents,val2.exponents
+	
+	if ExpantaNum.le(val, ZERO) then
+		return NAN
+	end
+	if ExpantaNum.eq(val, 1) then
+		return ONE
+	end
+	if ExpantaNum.eq(val, ZERO) then
+		return ZERO
+	end
 	if ExpantaNum.eq(val2, 0) then
 		return ONE
 	end
 	if ExpantaNum.eq(val2, 1) then
 		return val
+	end
+	
+	if ExpantaNum.meeq(ExpantaNum.max(val,val2), maxPOW) then
+		return ExpantaNum.max(val, val2)
 	end
 	if ExpantaNum.le(val2, 0) then
 		return ExpantaNum.recip(ExpantaNum.pow(val, ExpantaNum.neg(val2)))
@@ -1046,24 +1063,13 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 		end
 		return ExpantaNum.neg(ExpantaNum.pow(ExpantaNum.abs(val), val2))
 	end 
-	if ExpantaNum.le(val, ZERO) then
-		return NAN
-	end
-	if ExpantaNum.eq(val, 1) then
-		return ONE
-	end
-	if ExpantaNum.eq(val, ZERO) then
-		return ZERO
-	end
-	if ExpantaNum.meeq(ExpantaNum.max(val,val2), maxPOW) then
-		return ExpantaNum.max(val, val2)
-	end
+	
 	if ExpantaNum.eq(val, 10) then
-		if ExpantaNum.me(val2, 0) then
-			if array2[2] then
-				array2[2] = array2[2]+1
+		if ExpantaNum.me(val2, ZERO) then
+			if val2.exponents[2] then
+				val2.exponents[2] = val2.exponents[2]+1
 			else
-				array2[2] = 1
+				val2.exponents[2] = 1
 			end
 			return ExpantaNum.correct(val2)
 		else
@@ -1131,6 +1137,7 @@ function ExpantaNum.root(val, val2)
 	return ExpantaNum.pow(10, ExpantaNum.div(ExpantaNum.log10(val), val2))
 end
 
+-- TODO: fix mul
 function ExpantaNum.mul(val,val1)
 	local x = ExpantaNum.correct(val)
 	local y = ExpantaNum.correct(val1)
@@ -1150,11 +1157,14 @@ function ExpantaNum.mul(val,val1)
 	if ExpantaNum.me(ExpantaNum.max(x,y),maxMUL) then
 		return ExpantaNum.max(x, y)
 	end
+	
 	local n = ExpantaNum.toNumber(x)*ExpantaNum.toNumber(y)
 	if n <= maxAllowed then
 		return ExpantaNum.correct(n)
 	end
-	return ExpantaNum.pow(10,ExpantaNum.add(ExpantaNum.log10(x),ExpantaNum.log10(y)))
+	
+	local yaboi = {ExpantaNum.log10(x),ExpantaNum.log10(y)}
+	return ExpantaNum.pow10(ExpantaNum.add( table.unpack(yaboi) ))
 end
 
 function ExpantaNum.floor(x)
@@ -1219,7 +1229,7 @@ end
 -- eternitynum: sub(x.y) = add(x, -y)
 function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
-	y = ExpantaNum.correct(y) 
+	y = ExpantaNum.correct(y)
 	-- TODO: add
 	--[[
 	
@@ -1475,15 +1485,19 @@ end
 
 function ExpantaNum.toBigNum(val)
 	val = ExpantaNum.correct(val)
+	
 	local b = {}
 	if #val.exponents == 1 then
 		return errorcorrection({val.exponents[1]*val.sign,0})
 	end
 	if val.exponents[2] == 1 then
-		return errorcorrection({val.sign, val.exponents[1]})
+		local int = math.floor(val.exponents[1])
+		local dec = val.exponents[1] - int
+		--warn(int, dec, val.exponents[1])
+		return errorcorrection({10^dec*val.sign,int})
 	end
-	if val.exponents[2] == 2 and math.log10(val.exponents[1]) <= 308.2547155599167438988686282 then
-		return {val.sign, 10^val.exponents[1]}
+	if val.exponents[2] == 2 and val.exponents[1] <= 308.2547155599167438988686282 then
+		return {val.sign,10^val.exponents[1]}
 	end
 	return {val.sign, INF}
 end
@@ -1499,7 +1513,7 @@ function ExpantaNum.toScientific(x): string
 	if ExpantaNum.me(x, 'ee13.9') then
 		return "1e" .. ExpantaNum.toScientific(ExpantaNum.log10(x))
 	end
-	local array = x[2]
+	local array = x.exponents
 	if array[2] == nil then
 		local exp = math.log10(array[1])
 		local b = 10^(exp-math.floor(exp))
@@ -2562,6 +2576,7 @@ function short(bnum)
 	if #NOTbnum == 1 then
 		bnum = ExpantaNum.toBigNum(bnum)
 	end
+	
 	local SNumber0 = bnum[2]
 	local SNumber1 = bnum[1]
 	local leftover = math.fmod(SNumber0, 3)
