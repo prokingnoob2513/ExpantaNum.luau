@@ -88,7 +88,7 @@ local maxHyperions = 10 -- for hyper-E notation
 ----------- END OF CONFIGURABLE DEFAULTS -------------
 
 export type ExpantaNum = {
-	sign: number, -- 1 = posiive, -1 = negative
+	sign: number, -- 1 = positive, -1 = negative
 	exponents: {number}, -- i1 = multi, i2 = exponent, i3 = tetrate, iN = 10{N-1}
 	last: number, -- last index is 10{N}
 	layer: number -- JJJJJ...JJJJexps J reps N times where Jn = 10{n}10
@@ -495,7 +495,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	if not (val.sign and val.exponents and val.last and val.layer) then
 		val = construct_ExNum(val[1], val[2], val[3], val[4])
 	end
-	
+
 	if type(val.exponents) ~= "table" then
 		val = {
 			sign = val.sign,
@@ -702,7 +702,7 @@ function ExpantaNum.fromNumber(val: number): ExpantaNum
 	if val == 0 then
 		return ZERO
 	end
-	
+
 	local s = math.sign(val)
 	if val < maxInt then
 		return construct_ExNum(s, math.abs(val), 0, 0)
@@ -946,7 +946,7 @@ function ExpantaNum.cmp(val: ExpantaNum, val2: ExpantaNum): boolean -- 0 = eq, -
 	if val.sign == INF and val2.sign ~= INF then return val[1] end
 	if val.sign ~= INF and val2.sign == INF then return -val2[1] end
 	if #val.exponents == 1 and val.exponents[1] == 0 and
-	   #val2.exponents == 1 and val2.exponents[1] == 0 then
+		#val2.exponents == 1 and val2.exponents[1] == 0 then
 		return 0
 	end
 	if val.sign ~= val2.sign then return val.sign end
@@ -1324,7 +1324,7 @@ function ExpantaNum.sub(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y) 
 	--return ExpantaNum.add(x, ExpantaNum.neg(y))
-	
+
 	if x.sign == -1 then
 		return ExpantaNum.neg(ExpantaNum.sub(ExpantaNum.neg(x),ExpantaNum.neg(y)))
 	end
@@ -1512,7 +1512,7 @@ function ExpantaNum.toScientific(x): string
 	end
 end
 
-function ExpantaNum.toShortScientific(x): string
+function ExpantaNum.toShortScientific(x: ExpantaNum): string
 	x = ExpantaNum.correct(x)
 	if ExpantaNum.le(x,1000) then
 		return ExpantaNum.toNumber(x)
@@ -1520,10 +1520,14 @@ function ExpantaNum.toShortScientific(x): string
 	if ExpantaNum.me(x,maxScientific) then
 		return ExpantaNum.toEs(x)
 	end
-	local x1 = x[1]
-	local x2 = x[2]
+	local x1 = x.sign
+	local x2 = x.exponents
 
-	return string.rep("e", x2[2]) .. short(ExpantaNum.toBigNum(x2[1]))
+	if x1 == 1 then
+		return string.rep("e", x2[2]) .. short(x2[1])
+	elseif x1 == -1 then
+		return "-" .. string.rep("e", x2[2]) .. short(x2[1])
+	end
 end
 
 function ExpantaNum.short(x): string
@@ -1543,7 +1547,7 @@ function ExpantaNum.toEnt(x: ExpantaNum, isShort): string
 		x.exponents[2] = 10^x.exponents[1]
 		x.exponents[3] = nil
 	end
-	
+
 	local part = "E(" .. x.exponents[2] .. ")"
 	if isShort then
 		part = "E(" .. ExpantaNum.short(x.exponents[2]) .. ")"
@@ -1551,7 +1555,7 @@ function ExpantaNum.toEnt(x: ExpantaNum, isShort): string
 	if x.sign == -1 then
 		part = "-" .. part
 	end
-	
+
 	if isShort then
 		return part .. x.exponents[1]
 	end
@@ -1600,7 +1604,7 @@ function ExpantaNum.toHyperE(x: ExpantaNum, isShort): string
 	if x.layer > 1 then
 		error("toHyperE not supported for numbers over 10{maxInt}10")	
 	end
-	
+
 	if ExpantaNum.eq(x,ZERO) then
 		return "0"
 	end
@@ -1613,7 +1617,7 @@ function ExpantaNum.toHyperE(x: ExpantaNum, isShort): string
 		end
 		return "E" .. x.exponents[1]
 	end
-	
+
 	local str = "E" .. Decimal(x.exponents[1],PrecisionDisplay) .. "#"
 	if isShort then
 		str = "E" .. ExpantaNum.short(Decimal(x.exponents[1],PrecisionDisplay)) .. "#"
@@ -1971,7 +1975,7 @@ end
 function ExpantaNum.lbencode(onum: ExpantaNum)
 	onum = ExpantaNum.correct(onum)
 	if ExpantaNum.eq(onum, ZERO) then return 0 end
-	
+
 	local approx = 6.267775e14
 	local lowerApprox = 6.26775e8
 
@@ -2056,7 +2060,7 @@ function ExpantaNum.lbdecode(num: number)
 	if num == 0 then
 		return ZERO
 	end
-	
+
 	local approx = 6.267775e14
 	local lowerApprox = 6.26775e8
 
@@ -2332,7 +2336,7 @@ function ExpantaNum.ExpantaTools_oom_difference(first, last, delay)
 
 	if ExpantaNum.eq(first, last) then return "" end
 	if ExpantaNum.me(first, last) then return nil end -- TODO: add support for negative ooms
-	
+
 	local g = ExpantaNum.add(first, ExpantaNum.div(last, 1/delay))
 	if ExpantaNum.meeq(first, "[100, 2];1;0") then
 		-- above googolplex
@@ -2341,7 +2345,7 @@ function ExpantaNum.ExpantaTools_oom_difference(first, last, delay)
 		table.insert(g, 1)
 		local something2 = first[2][1]
 		table.insert(first, 1)
-		
+
 		local oom = ExpantaNum.sub(something, something2):div(delay)
 		if ExpantaNum.meeq(oom, 1) then
 			return "+" .. ExpantaNum.short(oom) .. " OoMs^" .. tower .. "/s"
@@ -2353,7 +2357,7 @@ function ExpantaNum.ExpantaTools_oom_difference(first, last, delay)
 			return "+" .. ExpantaNum.short(oom) .. " OoMs/s"
 		end
 	end
-	
+
 	-- default
 	return "+" .. ExpantaNum.toDisplay(ExpantaNum.sub(last, first):div(delay)) .. "/s"
 end
@@ -2365,7 +2369,7 @@ function ExpantaNum.ExpantaTools_OldLbdecode(num: number)
 	if num == 0 then
 		return ZERO
 	end
-	
+
 	local approx = 6.267775e14
 	local lowerApprox = 6.26775e8
 
@@ -2408,7 +2412,7 @@ end
 function ExpantaNum.ExpantaTools_OldLbencode(onum: ExpantaNum): number
 	onum = ExpantaNum.correct(onum)
 	if ExpantaNum.eq(onum, ZERO) then return 0 end
-	
+
 	local approx = 6.267775e14
 	local lowerApprox = 6.26775e8
 
@@ -2668,7 +2672,7 @@ end
 
 function ExpantaNum.abbreviate(onum): string
 	onum = ExpantaNum.correct(onum)
-	if ExpantaNum.eq(onum,{1,{0},0,0}) then
+	if ExpantaNum.eq(onum,ZERO) then
 		return "0"
 	elseif ExpantaNum.le(onum, {1, {0.000000001},0,0}) then
 		return "1 / " .. ExpantaNum.short(ExpantaNum.div(1, onum))
