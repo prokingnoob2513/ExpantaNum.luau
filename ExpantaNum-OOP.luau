@@ -293,11 +293,7 @@ end
 function Number:toEnt(toshort: boolean)
 	local num = self
 
-	if toshort then
-		return ExpantaNum.toShortEnt(num)
-	else
-		return ExpantaNum.toEnt(num)
-	end
+	return ExpantaNum.toEnt(num, toshort)
 end
 
 function Number:toEs(toshort: boolean)
@@ -313,11 +309,7 @@ end
 function Number:toHyperE(toshort: boolean)
 	local num = self
 
-	if toshort then
-		return ExpantaNum.toShortHyperE(num)
-	else
-		return ExpantaNum.toHyperE(num)
-	end
+	return ExpantaNum.toHyperE(num, toshort)
 end
 
 function Number:toDisplay(toshort: boolean)
@@ -779,7 +771,7 @@ function ExpantaNum.toDisplay(val: ExpantaNum, shorts: boolean): string
 				return esign .. short(construct_ExNum(1,array,1,0))
 			end
 		end
-		
+
 		local base = 1
 		if math.fmod(array[1],1) ~= 0 then
 			base = 10^(array[1]-math.floor(array[1]))
@@ -944,11 +936,11 @@ function ExpantaNum.cmp(val: ExpantaNum, val2: ExpantaNum): boolean -- 0 = eq, -
 	if V1Nan and val2 ~= val2 then return 0
 	elseif V1Nan or val2 ~= val2 then return 1
 	end
-	
+
 	if val.sign == 1 and val2.sign ~= 1 then return val.sign end
 	if val.sign ~= 1 and val2.sign == 1 then return -val2.sign end
 	if val.sign ~= val2.sign then return val.sign end
-	
+
 	if #val.exponents == 1 and val.exponents[1] == 0 and
 		#val2.exponents == 1 and val2.exponents[1] == 0 then
 		return 0
@@ -1034,7 +1026,7 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	val,val2 = ExpantaNum.correct(val),ExpantaNum.correct(val2)
 	local sign,sign2 = val.sign,val2.sign
 	--local array,array2 = val.exponents,val2.exponents
-	
+
 	if ExpantaNum.le(val, ZERO) then
 		return NAN
 	end
@@ -1050,7 +1042,7 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	if ExpantaNum.eq(val2, 1) then
 		return val
 	end
-	
+
 	if ExpantaNum.meeq(ExpantaNum.max(val,val2), maxPOW) then
 		return ExpantaNum.max(val, val2)
 	end
@@ -1063,7 +1055,7 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 		end
 		return ExpantaNum.neg(ExpantaNum.pow(ExpantaNum.abs(val), val2))
 	end 
-	
+
 	if ExpantaNum.eq(val, 10) then
 		if ExpantaNum.me(val2, ZERO) then
 			if val2.exponents[2] then
@@ -1088,10 +1080,10 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	return ExpantaNum.pow(10, exporrrrrrrrrr)
 end
 
-function ExpantaNum.mod(val, val2)
+function ExpantaNum.mod(val: ExpantaNum, val2: ExpantaNum)
 	val = ExpantaNum.correct(val)
 	val2 = ExpantaNum.correct(val2)
-	local sign,sign2 = val[1],val2[1]
+	local sign,sign2 = val.sign,val2.sign
 	if ExpantaNum.eq(val,ZERO) then
 		return ZERO
 	end
@@ -1122,7 +1114,7 @@ function ExpantaNum.root(val, val2)
 		return NAN
 	end
 	if ExpantaNum.eq(val, 1) then
-		return {1, {1}}
+		return ONE
 	end
 	if ExpantaNum.eq(val, ZERO) then
 		return ZERO
@@ -1157,12 +1149,12 @@ function ExpantaNum.mul(val,val1)
 	if ExpantaNum.me(ExpantaNum.max(x,y),maxMUL) then
 		return ExpantaNum.max(x, y)
 	end
-	
+
 	local n = ExpantaNum.toNumber(x)*ExpantaNum.toNumber(y)
 	if n <= maxAllowed then
 		return ExpantaNum.correct(n)
 	end
-	
+
 	local yaboi = {ExpantaNum.log10(x),ExpantaNum.log10(y)}
 	return ExpantaNum.pow10(ExpantaNum.add( table.unpack(yaboi) ))
 end
@@ -1198,7 +1190,7 @@ function ExpantaNum.div(val,val1)
 		return ExpantaNum.div(ExpantaNum.abs(x),ExpantaNum.abs(y))
 	end
 	if ExpantaNum.eq(y,ZERO) then
-		return NAN
+		return INF
 	end
 	if ExpantaNum.eq(y,ONE) then
 		return x
@@ -1365,7 +1357,7 @@ function ExpantaNum.sub(x: ExpantaNum, y: ExpantaNum)
 		else
 			b = math.log10(p.exponents[1])
 		end
-		local DIFF = q[2][1]-b
+		local DIFF = q.exponents[1]-b
 		if DIFF > 20 then
 			FILTER1 = ExpantaNum.max(x,y)
 			if FILTER2 then
@@ -1485,7 +1477,7 @@ end
 
 function ExpantaNum.toBigNum(val)
 	val = ExpantaNum.correct(val)
-	
+
 	local b = {}
 	if #val.exponents == 1 then
 		return errorcorrection({val.exponents[1]*val.sign,0})
@@ -1525,8 +1517,9 @@ function ExpantaNum.toScientific(x): string
 		return Decimal(b,PrecisionDisplay) .. 'e' .. math.floor(exp)
 	end
 end
-
+-- TODO: MERGE THIS AAAAAAAAAAAAAAAAAAAAAAA
 function ExpantaNum.toShortScientific(x: ExpantaNum): string
+	warn("toShortScientific will be depricated soon, consider using toScientific instead!")
 	x = ExpantaNum.correct(x)
 	if ExpantaNum.le(x,1000) then
 		return ExpantaNum.toNumber(x)
@@ -1556,7 +1549,7 @@ function ExpantaNum.toEnt(x: ExpantaNum, isShort): string
 	x = ExpantaNum.correct(x)
 	if x.exponents[3] then
 		if x.exponents[3] > 1 or x.exponents[1] > 308 or x.exponents[2] > 1 then
-			return ExpantaNum.toShortHyperE(x)
+			return ExpantaNum.toHyperE(x, isShort)
 		end
 		x.exponents[2] = 10^x.exponents[1]
 		x.exponents[3] = nil
@@ -1581,12 +1574,13 @@ function ExpantaNum.toEs(x: ExpantaNum): string
 	if #x.exponents > 2 then
 		return ExpantaNum.toEnt(x)
 	end
-	if x.exponents[2] == nil then
-		return ExpantaNum.short(x)
-	end
 	if x.exponents[2] > maxEs then
 		return ExpantaNum.toEnt(x)
 	end
+	if x.exponents[2] == nil then
+		return ExpantaNum.short(x)
+	end
+	
 	if x.sign == -1 then
 		return "-" .. ExpantaNum.toEs(ExpantaNum.abs(x))
 	end
@@ -1616,7 +1610,8 @@ end
 function ExpantaNum.toHyperE(x: ExpantaNum, isShort): string
 	x = ExpantaNum.correct(x)
 	if x.layer > 1 then
-		error("toHyperE not supported for numbers over 10{maxInt}10")	
+		--warn("toHyperE not supported for numbers over 10{maxInt}10, using fallback notation instead")
+		return ExpantaNum.toDisplay(x)
 	end
 
 	if ExpantaNum.eq(x,ZERO) then
@@ -2081,7 +2076,7 @@ function ExpantaNum.lbdecode(num: number)
 	local mode = num / 1e16
 	local sign = math.sign(num)
 	if mode >= 3 then
-		num += 1
+		num -= 1
 	end
 
 	if mode <= 1 then
@@ -2576,7 +2571,7 @@ function short(bnum)
 	if #NOTbnum == 1 then
 		bnum = ExpantaNum.toBigNum(bnum)
 	end
-	
+
 	local SNumber0 = bnum[2]
 	local SNumber1 = bnum[1]
 	local leftover = math.fmod(SNumber0, 3)
@@ -2698,11 +2693,15 @@ function ExpantaNum.abbreviate(onum): string
 	elseif ExpantaNum.le(onum,{1,maxEs,1}) then
 		return ExpantaNum.toShortEs(onum) 
 	elseif ExpantaNum.le(onum,{1,1e306,1}) then
-		return ExpantaNum.toShortEnt(onum)
+		return ExpantaNum.toEnt(onum, true)
 	else
-		return ExpantaNum.toShortHyperE(onum)
+		return ExpantaNum.toHyperE(onum, true)
 	end
 end
 
-return ExpantaNum
+-- Add custom functions if you want
+function ExpantaNum.triangular(x)
+	return ExpantaNum.div(ExpantaNum.mul(x,ExpantaNum.add(x,1)),2)
+end
 
+return ExpantaNum
