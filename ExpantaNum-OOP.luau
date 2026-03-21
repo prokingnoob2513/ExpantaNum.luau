@@ -8,6 +8,8 @@
 	@prokingnoob2513 (roblox) / @numero.sloppen (discord)
 	@vikisvikis1234 (roblox) / @the_hamster_god (discord)
 	
+	Some code inspired by EternityNum
+	
 	"Boring" links!
 	https://github.com/prokingnoob2513/ExpantaNum.luau/tree/main
 	https://github.com/hamster624/ExpantaNum-extended.py
@@ -110,16 +112,19 @@ function construct_ExNum(sign_, exponents_, last_, layer_): ExpantaNum
 	if typeof(exponents_) == "number" then
 		exponents_ = {exponents_}
 	end
-	return setmetatable({
+	local arr = {
 		sign = sign_,
 		exponents = exponents_,
 		last = last_,
 		layer = layer_
-	}, Number)
+	}
+	return setmetatable(arr, Number)
 end
 
 local maxAllowed = 1.797693015e308
 local maxInt = 2^53-1
+local logMaxInt = math.log10(maxInt)
+
 local NAN = 0/0
 local INF = math.huge
 local pi = math.pi
@@ -518,6 +523,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 			if array[i] == 0 then
 				table.remove(array)
 				len -= 1
+				last -= 1
 			else
 				break
 			end
@@ -548,7 +554,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	if len > 2 then
 		if array[2] < 3 then
 			for i=1,array[2] do
-				if array[i] >= math.log10(maxInt) then
+				if array[i] >= logMaxInt then
 					break
 				elseif array[2] == 0 then
 					break
@@ -612,15 +618,16 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	remove0s()
 
 	if len > 1 then
-		if array[1] < math.log10(maxInt) and array[2] > 0  then
-			array[2] -= 1
-			array[1] = 10^array[1]
-			array[2] = (array[2] == 0) and nil or array[2] 
-		end
-		if array[1] < math.log10(maxInt) and array[2] > 0  then
-			array[2] -= 1
-			array[1] = 10^array[1]
-			array[2] = (array[2] == 0) and nil or array[2] 
+		for i = 1,2 do
+			-- check twice?
+			if array[1] < logMaxInt and array[2] > 0 then
+				array[2] -= 1
+				array[1] = 10^array[1]
+
+				if array[2] == 0 then
+					table.remove(array, 2)
+				end
+			end
 		end
 	end
 	for i=2,len do
@@ -655,7 +662,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 		end
 	end
 
-	if not #array then qq[2] = {0} end
+	if not #array then qq.exponents = {0} end
 	-- if qq[3] > maxOPS then qq[3] -= 1 end do we need this
 
 	-- if last > maxint then increase layer by 1 and reset last to 1
@@ -666,7 +673,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	end
 	-- convert back if possible
 	if layer > 0 then
-		if (array[1] or 0) < math.log10(maxInt) and (array[2] or 0) == 1 then
+		if (array[1] or 0) < logMaxInt and (array[2] or 0) == 1 then
 			array[1] = 10^array[1]
 			array[2] = 0
 		end
@@ -994,15 +1001,16 @@ function ExpantaNum.log10(val: ExpantaNum)
 	if ExpantaNum.eq(val, ZERO) then
 		return ZERO
 	end
-	local val1 = table.clone(val)
-	if ExpantaNum.le(val1, 0) then return NAN end
-	if ExpantaNum.eq(val1, 0) then return -INF end
-	if ExpantaNum.leeq(val1, maxInt) then
-		return ExpantaNum.new(ExpantaNum.fromNumber(math.log10(ExpantaNum.toNumber(val1))))
-	end
 	if #val.exponents > 2 then return val end
-	val1.exponents[2] -= 1
-	return ExpantaNum.new(val1) 
+
+	if ExpantaNum.le(val, ZERO) then return NAN end
+	if ExpantaNum.eq(val, ZERO) then return -INF end
+	if ExpantaNum.leeq(val, maxInt) then
+		return ExpantaNum.fromNumber(math.log10(ExpantaNum.toNumber(val)))
+	end
+	
+	val.exponents[2] -= 1
+	return ExpantaNum.correct(val)
 end
 
 function ExpantaNum.isint(val)
@@ -1025,59 +1033,48 @@ end
 function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	val,val2 = ExpantaNum.correct(val),ExpantaNum.correct(val2)
 	local sign,sign2 = val.sign,val2.sign
-	--local array,array2 = val.exponents,val2.exponents
 
-	if ExpantaNum.le(val, ZERO) then
-		return NAN
-	end
-	if ExpantaNum.eq(val, 1) then
-		return ONE
-	end
-	if ExpantaNum.eq(val, ZERO) then
-		return ZERO
-	end
-	if ExpantaNum.eq(val2, 0) then
-		return ONE
-	end
-	if ExpantaNum.eq(val2, 1) then
-		return val
-	end
-
-	if ExpantaNum.meeq(ExpantaNum.max(val,val2), maxPOW) then
-		return ExpantaNum.max(val, val2)
-	end
-	if ExpantaNum.le(val2, 0) then
-		return ExpantaNum.recip(ExpantaNum.pow(val, ExpantaNum.neg(val2)))
-	end
-	if ExpantaNum.le(val, 0) and ExpantaNum.isint(val2) then
+	if ExpantaNum.le(val, ZERO) and ExpantaNum.isint(val2) then
 		if ExpantaNum.le(ExpantaNum.mod(val2, 2), 1) then
 			return ExpantaNum.pow(ExpantaNum.abs(val), val2)
 		end
 		return ExpantaNum.neg(ExpantaNum.pow(ExpantaNum.abs(val), val2))
-	end 
-
-	if ExpantaNum.eq(val, 10) then
-		if ExpantaNum.me(val2, ZERO) then
-			if val2.exponents[2] then
-				val2.exponents[2] = val2.exponents[2]+1
-			else
-				val2.exponents[2] = 1
-			end
-			return ExpantaNum.correct(val2)
-		else
-			return ExpantaNum.fromNumber(10^ExpantaNum.toNumber(val2))
-		end
 	end
-	if ExpantaNum.le(val2, 1) then
+	if ExpantaNum.eq(val, ZERO) then
+		return ZERO
+	end
+	if ExpantaNum.eq(val, ONE) then
+		return ONE
+	end
+	
+	if ExpantaNum.le(val2, ZERO) then
+		return ExpantaNum.recip(ExpantaNum.pow(val, ExpantaNum.neg(val2)))
+	end
+	if ExpantaNum.eq(val2, ZERO) then
+		return ONE
+	end
+	if ExpantaNum.le(val2, ONE) then
 		ExpantaNum.root(val,ExpantaNum.recip(val2))
 	end
-	local ni = ExpantaNum.toNumber(val)^ExpantaNum.toNumber(val2)
-	if ni<= maxInt then
-		return ExpantaNum.fromNumber(ni)
+	if ExpantaNum.eq(val2, ONE) then
+		return val
 	end
+	
+	if ExpantaNum.meeq(ExpantaNum.max(val,val2), maxPOW) then
+		return ExpantaNum.max(val, val2)
+	end
+
+	if ExpantaNum.eq(val, 10) then
+		return ExpantaNum.pow10(val2)
+	end
+	local n = ExpantaNum.toNumber(val)^ExpantaNum.toNumber(val2)
+	if n <= maxInt then
+		return ExpantaNum.fromNumber(n)
+	end
+	
 	local f = ExpantaNum.log10(val)
 	local exporrrrrrrrrr =  ExpantaNum.mul(f, val2)
-	return ExpantaNum.pow(10, exporrrrrrrrrr)
+	return ExpantaNum.pow10(exporrrrrrrrrr)
 end
 
 function ExpantaNum.mod(val: ExpantaNum, val2: ExpantaNum)
@@ -1126,7 +1123,7 @@ function ExpantaNum.root(val, val2)
 			return ZERO
 		end
 	end
-	return ExpantaNum.pow(10, ExpantaNum.div(ExpantaNum.log10(val), val2))
+	return ExpantaNum.pow10(ExpantaNum.div(ExpantaNum.log10(val), val2))
 end
 
 -- TODO: fix mul
@@ -1143,20 +1140,20 @@ function ExpantaNum.mul(val,val1)
 	if ExpantaNum.eq(x,ZERO) or ExpantaNum.eq(y,ZERO) then
 		return ZERO
 	end
-	if ExpantaNum.eq(y,ONE) then
-		return x
-	end
+	
+	if ExpantaNum.eq(x,ONE) then return y end
+	if ExpantaNum.eq(y,ONE) then return x end
 	if ExpantaNum.me(ExpantaNum.max(x,y),maxMUL) then
 		return ExpantaNum.max(x, y)
 	end
 
 	local n = ExpantaNum.toNumber(x)*ExpantaNum.toNumber(y)
-	if n <= maxAllowed then
+	if n <= maxInt then
 		return ExpantaNum.correct(n)
 	end
 
-	local yaboi = {ExpantaNum.log10(x),ExpantaNum.log10(y)}
-	return ExpantaNum.pow10(ExpantaNum.add( table.unpack(yaboi) ))
+	return ExpantaNum.pow10(ExpantaNum.add(ExpantaNum.log10(x),ExpantaNum.log10(y)))
+	--return ExpantaNum.pow10(ExpantaNum.add( table.unpack(yaboi) ))
 end
 
 function ExpantaNum.floor(x)
@@ -1208,7 +1205,7 @@ function ExpantaNum.div(val,val1)
 	if FILTER1 <= maxAllowed then
 		return ExpantaNum.correct(FILTER1)
 	end
-	local qq = ExpantaNum.pow(10, ExpantaNum.sub(ExpantaNum.log10(x),ExpantaNum.log10(y)) )
+	local qq = ExpantaNum.pow10( ExpantaNum.sub(ExpantaNum.log10(x),ExpantaNum.log10(y)) )
 	local qqw = ExpantaNum.floor(qq)
 	if ExpantaNum.le(ExpantaNum.sub(qq,qqw), 1e-9) then
 		return qqw
@@ -1216,161 +1213,52 @@ function ExpantaNum.div(val,val1)
 	return qq
 end
 
--- serika: sub(x.y) = add(x, -y)
--- infinitemath: just copypasting code
--- eternitynum: sub(x.y) = add(x, -y)
 function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
-	-- TODO: add
-	--[[
 	
+	if ExpantaNum.eq(x, ZERO) then return y end
+	if ExpantaNum.eq(y, ZERO) then return x end
+	if ExpantaNum.me(x, maxADD) then return x end
+	if ExpantaNum.me(y, maxADD) then return y end
+	if ExpantaNum.eq(x, ExpantaNum.neg(y)) then return ZERO end
 	
-	
-	
-	
+	local min = ExpantaNum.min(x,y)
+	local max = ExpantaNum.max(x,y)
+	local magdif, mantissa
 
-if EN.IsInf(Value) or EN.IsInf(Value2) then return Inf end
-	if EN.IsZero(Value) then return Value2 end
-	if EN.IsZero(Value2) then return Value end
-  
-	if Value.Sign == -Value2.Sign and Value.Layer == Value2.Layer and Value.Exp == Value2.Exp then
-		return ZERO
+	if min.exponents[2] == nil and max.exponents[2] == nil then
+		return ExpantaNum.correct(min.sign * min.exponents[1] + max.sign * max.exponents[1])
 	end
-
-	local a,b
-
-	if Value.Layer >= 2 or Value2.Layer >=2 then
-		return EN.maxAbs(Value, Value2)
-	end	
-
-	if EN.cmpAbs(Value, Value2) > 0 then
-		a = Value
-		b = Value2
+	if max.exponents[2] == 1 and min.exponents[2] == nil then
+		if math.abs(max.exponents[1] - math.log10(min.exponents[1])) > logMaxInt then return max end
+		magdif = 10 ^ (max.exponents[1] - math.log10(min.exponents[1]))
+		mantissa = min.sign + max.sign * magdif
+		
+		return ExpantaNum.correct({
+			sign = math.sign(mantissa),
+			exponents = {math.log10(min.exponents[1]) + math.log10(math.abs(mantissa)) , 1},
+			last = 1,
+			layer = 0,
+		})
 	else
-		a = Value2
-		b = Value	
+		if math.abs(max.exponents[2] - min.exponents[2]) > logMaxInt then return max end
+		magdif = 10 ^ (max.exponents[1] - min.exponents[1])
+		mantissa = min.sign + max.sign * magdif
+		
+		return ExpantaNum.correct({
+			sign = math.sign(mantissa),
+			exponents = {min.exponents[1] + math.log10(math.abs(mantissa)) , 1},
+			last = 1,
+			layer = 0,
+		})
 	end
-
-	if a.Layer == 0 and b.Layer == 0 then
-		return EN.fromNumber(a.Sign * a.Exp + b.Sign * b.Exp)
-	end
-
-	local layera = a.Layer * math.sign(a.Exp)																		
-	local layerb = b.Layer * math.sign(b.Exp)	
-
-	if layera - layerb >= 2 then return a end
-
-	if layera == 0 and layerb == -1 then
-		if math.abs(b.Exp - math.log10(a.Exp)) > msd then
-			return a
-		else
-			local magdif = 10 ^ (math.log10(a.Exp) - b.Exp)
-			local Mantissa = b.Sign + a.Sign * magdif
-			return EN.new(math.sign(Mantissa), 1, b.Exp + math.log10(math.abs(Mantissa)))
-		end
-	end
-	
-	if layera == 1 and layerb == 0 then
-		if math.abs(a.Exp - math.log10(b.Exp)) > msd then return a end
-		local magdif = 10 ^ (a.Exp-math.log10(b.Exp))
-		local Mantissa = b.Sign + a.Sign * magdif
-		return EN.new(math.sign(Mantissa), 1, math.log10(b.Exp) + math.log10(math.abs(Mantissa)))
-	end
-
-	if math.abs(a.Exp - b.Exp) > msd then return a end
-
-	local magdif = 10 ^ (a.Exp - b.Exp)
-	local Mantissa = b.Sign + a.Sign * magdif
-	return EN.new(math.sign(Mantissa), 1,b.Exp + math.log10(math.abs(Mantissa)))
-
-
-
-
-
-
-
-	]]
-	if x.sign == -1 then
-		return ExpantaNum.neg(ExpantaNum.add(ExpantaNum.neg(x), ExpantaNum.neg(y)))
-	end
-	if y.sign == -1 then
-		return ExpantaNum.sub(x, ExpantaNum.neg(y))
-	end
-	if ExpantaNum.eq(x, ZERO) then
-		return y
-	end
-	if ExpantaNum.eq(y, ZERO) then
-		return x
-	end
-	local p = ExpantaNum.min(x,y)
-	local q = ExpantaNum.max(x,y)
-	local a = nil
-	if ExpantaNum.me(q,maxADD) or ExpantaNum.me(ExpantaNum.div(q,p), maxInt) then
-		a = q
-	elseif q.exponents[2] == nil then
-		a = ExpantaNum.correct(ExpantaNum.toNumber(x)+ExpantaNum.toNumber(y))
-	elseif q.exponents[2] == 1 then
-		local b = nil
-		if p.exponents[2] then
-			b = p.exponents[1]
-		else
-			b = math.log10(p.exponents[1])
-		end
-		a = ExpantaNum.correct({1,{b+math.log10(math.pow(10,q.exponents[1]-b)+1) , 1},1,0})
-	end
-	return a
 end
 
 function ExpantaNum.sub(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y) 
-	--return ExpantaNum.add(x, ExpantaNum.neg(y))
-
-	if x.sign == -1 then
-		return ExpantaNum.neg(ExpantaNum.sub(ExpantaNum.neg(x),ExpantaNum.neg(y)))
-	end
-	if y.sign == -1 then
-		return ExpantaNum.add(x, ExpantaNum.neg(y))
-	end
-	if ExpantaNum.eq(x,y) then
-		return ZERO
-	end
-	if ExpantaNum.eq(y,ZERO) then
-		return x
-	end
-	local p = ExpantaNum.min(x,y)
-	local q = ExpantaNum.max(x,y)
-	local FILTER2= ExpantaNum.me(y,x)
-	local FILTER1;
-	if ExpantaNum.me(q,maxADD) or ExpantaNum.me(ExpantaNum.div(q,p), maxADD) then
-		FILTER1=q
-		if FILTER2 then
-			FILTER1 = ExpantaNum.neg(FILTER1)
-		end
-	elseif q.exponents[2] == nil then
-		FILTER1 = ExpantaNum.correct(ExpantaNum.toNumber(x)-ExpantaNum.toNumber(y))
-	elseif q.exponents[2] == 1 then
-		local b = nil
-		if p.exponents[2] then
-			b = p.exponents[1]
-		else
-			b = math.log10(p.exponents[1])
-		end
-		local DIFF = q.exponents[1]-b
-		if DIFF > 20 then
-			FILTER1 = ExpantaNum.max(x,y)
-			if FILTER2 then
-				return ExpantaNum.neg(FILTER1)	
-			end
-			return FILTER1
-		end
-		FILTER1 = ExpantaNum.correct({1, {b+math.log10(math.pow(10,q.exponents[1]-b)-1) , 1}, 1, 0})
-		if FILTER2 then
-			FILTER1 = ExpantaNum.neg(FILTER1)	
-		end
-	end
-	return FILTER1
+	return ExpantaNum.add(x, ExpantaNum.neg(y))
 end
 
 function ExpantaNum.sqrt(x)
@@ -1379,7 +1267,7 @@ end
 
 function ExpantaNum.log(x,y)
 	y = y or 2.7182818284590452353602874
-	return ExpantaNum.new(ExpantaNum.log10(x))/ExpantaNum.log10(y)
+	return ExpantaNum.div(ExpantaNum.log10(x), ExpantaNum.log10(y))
 end
 
 function ExpantaNum.exp(x)
@@ -1391,7 +1279,16 @@ function ExpantaNum.maxabs(x,y)
 end
 
 function ExpantaNum.pow10(x)
-	return ExpantaNum.pow(10,x)
+	if ExpantaNum.me(x, ZERO) then
+		if x.exponents[2] then
+			x.exponents[2] += 1
+		else
+			x.exponents[2] = 1
+		end
+		return ExpantaNum.correct(x)
+	else
+		return ExpantaNum.fromNumber(10^ExpantaNum.toNumber(x))
+	end
 end
 
 function ExpantaNum.gamma(x)
@@ -1580,7 +1477,7 @@ function ExpantaNum.toEs(x: ExpantaNum): string
 	if x.exponents[2] == nil then
 		return ExpantaNum.short(x)
 	end
-	
+
 	if x.sign == -1 then
 		return "-" .. ExpantaNum.toEs(ExpantaNum.abs(x))
 	end
@@ -2350,9 +2247,9 @@ function ExpantaNum.ExpantaTools_oom_difference(first, last, delay)
 	if ExpantaNum.meeq(first, "[100, 2];1;0") then
 		-- above googolplex
 		local tower = math.floor(ExpantaNum.slog(g, 10):toNumber()-1.3010299956639813)
-		local something = g[2][1]
+		local something = g.exponents[1]
 		table.insert(g, 1)
-		local something2 = first[2][1]
+		local something2 = first.exponents[1]
 		table.insert(first, 1)
 
 		local oom = ExpantaNum.sub(something, something2):div(delay)
