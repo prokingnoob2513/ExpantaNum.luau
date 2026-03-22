@@ -869,6 +869,7 @@ function ExpantaNum.fromString(str)
 	if string.find(t[1], ',') or string.find(t[1],"%[") then
 		local t_decode = game.HttpService:JSONDecode(t[1])
 		
+		t_decode[1] = t_decode[1] or 0
 		s = math.sign(t_decode[1])
 		t_decode[1] = math.abs(t_decode[1])
 		
@@ -1220,7 +1221,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 	local max = ExpantaNum.max(x,y)
 	local magdif, mantissa
 
-	if min.exponents[2] == nil and max.exponents[2] == nil then
+	if max.exponents[2] == nil and min.exponents[2] == nil then
 		return ExpantaNum.correct(min.sign * min.exponents[1] + max.sign * max.exponents[1])
 	end
 	if max.exponents[2] == 1 and min.exponents[2] == nil then
@@ -1235,7 +1236,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 			layer = 0,
 		})
 	else
-		if math.abs(max.exponents[2] - min.exponents[2]) > logMaxInt then return max end
+		if math.abs(max.exponents[1] - min.exponents[1]) > logMaxInt then return max end
 		magdif = 10 ^ (max.exponents[1] - min.exponents[1])
 		mantissa = min.sign + max.sign * magdif
 		
@@ -1250,7 +1251,7 @@ end
 
 function ExpantaNum.sub(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
-	y = ExpantaNum.correct(y) 
+	y = ExpantaNum.correct(y)
 	return ExpantaNum.add(x, ExpantaNum.neg(y))
 end
 
