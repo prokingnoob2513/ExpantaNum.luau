@@ -483,16 +483,16 @@ function Hlambertw(n)
 end
 
 function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
-	if val == nil then   return ZERO   end
-	if val ~= val then   return NAN    end
 	if type(val) ~= 'table' then
 		return ExpantaNum.toExpanta(val)
 	end
-	if val.sign == 0 then   return   ZERO   end
 	if not (val.sign and val.exponents and val.last and val.layer) then
 		val = construct_ExNum(val[1], val[2], val[3], val[4])
 	end
-
+	if val == nil then   return ZERO   end
+	if val ~= val then   return NAN    end
+	if val.sign == 0 then   return   ZERO   end
+	
 	if type(val.exponents) ~= "table" then
 		val = {
 			sign = val.sign,
@@ -504,7 +504,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	if #val.exponents == 0 then
 		return ZERO
 	end
-	if val.exponents[1] == 0 then
+	if val.exponents[1] == 0 or val.exponents[1] == nil then
 		return ZERO
 	end
 	if val.last and val.last < maxOPS then
@@ -520,7 +520,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 
 	local function remove0s()
 		for i=len,1,-1 do
-			if array[i] == 0 then
+			if array[i] == 0 or array[i] == nil then
 				table.remove(array)
 				len -= 1
 				last -= 1
@@ -616,18 +616,11 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 
 	len = #array
 	remove0s()
-
+	
 	if len > 1 then
-		for i = 1,2 do
-			-- check twice?
-			if array[1] < logMaxInt and array[2] > 0 then
-				array[2] -= 1
-				array[1] = 10^array[1]
-
-				if array[2] == 0 then
-					table.remove(array, 2)
-				end
-			end
+		while array[1] < logMaxInt and (array[2] or 0) > 0 do
+			array[2] -= 1
+			array[1] = 10^array[1]
 		end
 	end
 	for i=2,len do
@@ -688,6 +681,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 			-- Extremely ineffecient vro!
 		end
 	end
+	remove0s()
 	qq.exponents = array
 	qq.last = last
 	qq.layer = layer
@@ -873,13 +867,12 @@ function ExpantaNum.fromString(str)
 	local t, s = {}, 1
 	for part in string.gmatch(str, "([^;]+)") do table.insert(t, part) end
 	if string.find(t[1], ',') or string.find(t[1],"%[") then
-		t[1] = game.HttpService:JSONDecode(t[1])
-		if t[1][1] < 0 then
-			t[1][1] = math.abs(t[1][1])
-			s = -1
-		end
-		local r = {math.sign(s or 1), t[1], tonumber(t[2]) or 0, tonumber(t[3]) or 0}
-		return ExpantaNum.new(r)
+		local t_decode = game.HttpService:JSONDecode(t[1])
+		
+		s = math.sign(t_decode[1])
+		t_decode[1] = math.abs(t_decode[1])
+		
+		return ExpantaNum.new({math.sign(s or 1), t_decode, tonumber(t[2]) or 0, tonumber(t[3]) or 0})
 	else
 		return ExpantaNum.new(tonumber(str))
 	end
@@ -1095,13 +1088,13 @@ end
 
 function ExpantaNum.root(val, val2)
 	val,val2 = ExpantaNum.new(val),ExpantaNum.new(val2)
-	if ExpantaNum.eq(val2, 1) then
+	if ExpantaNum.eq(val2, ONE) then
 		return val
 	end
 	if ExpantaNum.le(val2,ZERO) then
 		return ExpantaNum.recip(ExpantaNum.root(val, ExpantaNum.neg(val2)))
 	end
-	if ExpantaNum.le(val2, 1) then
+	if ExpantaNum.le(val2, ONE) then
 		return ExpantaNum.pow(val, ExpantaNum.recip(val2))
 	end
 	if ExpantaNum.le(val, ZERO)and ExpantaNum.isint(val2) and ExpantaNum.eq(ExpantaNum.mod(val2, 2), 1) then
@@ -1110,7 +1103,7 @@ function ExpantaNum.root(val, val2)
 	if ExpantaNum.le(val, ZERO) then
 		return NAN
 	end
-	if ExpantaNum.eq(val, 1) then
+	if ExpantaNum.eq(val, ONE) then
 		return ONE
 	end
 	if ExpantaNum.eq(val, ZERO) then
