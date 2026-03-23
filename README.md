@@ -27,4 +27,4 @@ Samak's Difficulty Button Incremental V4 https://www.roblox.com/games/7580792892
 
 
 
-shoutout to vikis btw
+Made by prokingnoob2513, also managed by the_hamster_god
