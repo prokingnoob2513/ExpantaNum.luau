@@ -1132,11 +1132,6 @@ function ExpantaNum.root(val, val2)
 		end
 	end
 	
-
-	warn(val)
-	warn(ExpantaNum.log10(val), val2)
-	warn(val, val2)
-	warn(ExpantaNum.div(ExpantaNum.log10(val), val2))
 	return ExpantaNum.pow10(ExpantaNum.div(ExpantaNum.log10(val), val2))
 end
 
