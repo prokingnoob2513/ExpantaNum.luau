@@ -25,6 +25,7 @@ toDisplay -- used for displaying numbers
 toString -- expantanum -> string
 fromString -- string -> expantanum
 toExpanta -- fromNumber and fromString combined
+clone -- clones an ExpantaNum table into a copied table
 
 eq 
 le 
@@ -492,7 +493,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	if val == nil then   return ZERO   end
 	if val ~= val then   return NAN    end
 	if val.sign == 0 then   return   ZERO   end
-	
+
 	if type(val.exponents) ~= "table" then
 		val = {
 			sign = val.sign,
@@ -616,7 +617,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 
 	len = #array
 	remove0s()
-	
+
 	if len > 1 then
 		while array[1] < logMaxInt and (array[2] or 0) > 0 do
 			array[2] -= 1
@@ -868,11 +869,11 @@ function ExpantaNum.fromString(str)
 	for part in string.gmatch(str, "([^;]+)") do table.insert(t, part) end
 	if string.find(t[1], ',') or string.find(t[1],"%[") then
 		local t_decode = game.HttpService:JSONDecode(t[1])
-		
+
 		t_decode[1] = t_decode[1] or 0
 		s = math.sign(t_decode[1])
 		t_decode[1] = math.abs(t_decode[1])
-		
+
 		return ExpantaNum.new({math.sign(s or 1), t_decode, tonumber(t[2]) or 0, tonumber(t[3]) or 0})
 	else
 		return ExpantaNum.new(tonumber(str))
@@ -990,21 +991,34 @@ function ExpantaNum.bound(num: ExpantaNum, min: ExpantaNum, max: ExpantaNum)
 	return ExpantaNum.min(min, ExpantaNum.max(max, num))
 end
 
+function ExpantaNum.clone(val: ExpantaNum)
+	val = ExpantaNum.correct(val)
+	local copy = {}
+	for k, v in pairs(val) do
+		if type(v) == "table" then
+			copy[k] = table.clone(v)
+		else
+			copy[k] = v
+		end
+	end
+	return setmetatable(copy, Number)
+end
+
 function ExpantaNum.log10(val: ExpantaNum)
 	val = ExpantaNum.correct(val)
-	if ExpantaNum.eq(val, ZERO) then
-		return ZERO
-	end
-	if #val.exponents > 2 then return val end
 
 	if ExpantaNum.le(val, ZERO) then return NAN end
 	if ExpantaNum.eq(val, ZERO) then return -INF end
 	if ExpantaNum.leeq(val, maxInt) then
-		return ExpantaNum.fromNumber(math.log10(ExpantaNum.toNumber(val)))
+		return ExpantaNum.fromNumber(
+			math.log10(ExpantaNum.toNumber(val))
+		)
 	end
+	if #val.exponents > 2 then return val end
 	
-	val.exponents[2] -= 1
-	return ExpantaNum.correct(val)
+	local val2 = ExpantaNum.clone(val)
+	val2.exponents[2] -= 1
+	return ExpantaNum.correct(val2)
 end
 
 function ExpantaNum.isint(val)
@@ -1021,7 +1035,7 @@ end
 function ExpantaNum.recip(val)
 	val = ExpantaNum.correct(val)
 	if ExpantaNum.me(ExpantaNum.abs(val), "2e323") then return ZERO end
-	return ExpantaNum.new(ExpantaNum.div(1, val))
+	return ExpantaNum.correct(ExpantaNum.div(1, val))
 end
 
 function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
@@ -1040,7 +1054,7 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	if ExpantaNum.eq(val, ONE) then
 		return ONE
 	end
-	
+
 	if ExpantaNum.le(val2, ZERO) then
 		return ExpantaNum.recip(ExpantaNum.pow(val, ExpantaNum.neg(val2)))
 	end
@@ -1053,7 +1067,7 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	if ExpantaNum.eq(val2, ONE) then
 		return val
 	end
-	
+
 	if ExpantaNum.meeq(ExpantaNum.max(val,val2), maxPOW) then
 		return ExpantaNum.max(val, val2)
 	end
@@ -1065,7 +1079,7 @@ function ExpantaNum.pow(val: ExpantaNum, val2: ExpantaNum)
 	if n <= maxInt then
 		return ExpantaNum.fromNumber(n)
 	end
-	
+
 	local f = ExpantaNum.log10(val)
 	local exporrrrrrrrrr =  ExpantaNum.mul(f, val2)
 	return ExpantaNum.pow10(exporrrrrrrrrr)
@@ -1088,7 +1102,7 @@ function ExpantaNum.mod(val: ExpantaNum, val2: ExpantaNum)
 end
 
 function ExpantaNum.root(val, val2)
-	val,val2 = ExpantaNum.new(val),ExpantaNum.new(val2)
+	val,val2 = ExpantaNum.correct(val),ExpantaNum.correct(val2)
 	if ExpantaNum.eq(val2, ONE) then
 		return val
 	end
@@ -1111,16 +1125,21 @@ function ExpantaNum.root(val, val2)
 		return ZERO
 	end
 	if ExpantaNum.me(ExpantaNum.max(val, val2), maxPOW) then
-		if ExpantaNum.me(val, val2)  then
+		if ExpantaNum.me(val, val2) then
 			return val
 		else
 			return ZERO
 		end
 	end
+	
+
+	warn(val)
+	warn(ExpantaNum.log10(val), val2)
+	warn(val, val2)
+	warn(ExpantaNum.div(ExpantaNum.log10(val), val2))
 	return ExpantaNum.pow10(ExpantaNum.div(ExpantaNum.log10(val), val2))
 end
 
--- TODO: fix mul
 function ExpantaNum.mul(val,val1)
 	local x = ExpantaNum.correct(val)
 	local y = ExpantaNum.correct(val1)
@@ -1134,7 +1153,7 @@ function ExpantaNum.mul(val,val1)
 	if ExpantaNum.eq(x,ZERO) or ExpantaNum.eq(y,ZERO) then
 		return ZERO
 	end
-	
+
 	if ExpantaNum.eq(x,ONE) then return y end
 	if ExpantaNum.eq(y,ONE) then return x end
 	if ExpantaNum.me(ExpantaNum.max(x,y),maxMUL) then
@@ -1147,7 +1166,6 @@ function ExpantaNum.mul(val,val1)
 	end
 
 	return ExpantaNum.pow10(ExpantaNum.add(ExpantaNum.log10(x),ExpantaNum.log10(y)))
-	--return ExpantaNum.pow10(ExpantaNum.add( table.unpack(yaboi) ))
 end
 
 function ExpantaNum.floor(x)
@@ -1172,34 +1190,30 @@ function ExpantaNum.ceil(x)
 end
 
 function ExpantaNum.div(val,val1)
-	local x = ExpantaNum.correct(val)
-	local y = ExpantaNum.correct(val1)
-	if x.sign * y.sign == -1 then
-		return ExpantaNum.neg(ExpantaNum.div(ExpantaNum.abs(x), ExpantaNum.abs(y)))
+	val = ExpantaNum.correct(val)
+	val1 = ExpantaNum.correct(val1)
+	if val.sign * val1.sign == -1 then
+		return ExpantaNum.neg(ExpantaNum.div(ExpantaNum.abs(val), ExpantaNum.abs(val1)))
 	end
-	if x.sign == -1 then
-		return ExpantaNum.div(ExpantaNum.abs(x),ExpantaNum.abs(y))
+	if val.sign == -1 then
+		return ExpantaNum.div(ExpantaNum.abs(val),ExpantaNum.abs(val1))
 	end
-	if ExpantaNum.eq(y,ZERO) then
-		return INF
-	end
-	if ExpantaNum.eq(y,ONE) then
-		return x
-	end
-	if ExpantaNum.eq(x,ZERO) then
-		return ZERO
-	end
-	if ExpantaNum.me(ExpantaNum.max(x,y),maxMUL) then
-		if ExpantaNum.me(x,y) then
-			return x
+	if ExpantaNum.eq(val1,ZERO) then return INF end
+	if ExpantaNum.eq(val1,ONE) then return val end
+	if ExpantaNum.eq(val,ZERO) then return ZERO end
+	if ExpantaNum.me(ExpantaNum.max(val,val1),maxMUL) then
+		if ExpantaNum.me(val,val1) then
+			return val
 		end
 		return ZERO
 	end
-	local FILTER1 = ExpantaNum.toNumber(x)/ExpantaNum.toNumber(y)
+	
+	local FILTER1 = ExpantaNum.toNumber(val)/ExpantaNum.toNumber(val1)
 	if FILTER1 <= maxAllowed then
 		return ExpantaNum.correct(FILTER1)
 	end
-	local qq = ExpantaNum.pow10( ExpantaNum.sub(ExpantaNum.log10(x),ExpantaNum.log10(y)) )
+	
+	local qq = ExpantaNum.pow10( ExpantaNum.sub(ExpantaNum.log10(val),ExpantaNum.log10(val1)) )
 	local qqw = ExpantaNum.floor(qq)
 	if ExpantaNum.le(ExpantaNum.sub(qq,qqw), 1e-9) then
 		return qqw
@@ -1210,13 +1224,13 @@ end
 function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
-	
+
 	if ExpantaNum.eq(x, ZERO) then return y end
 	if ExpantaNum.eq(y, ZERO) then return x end
 	if ExpantaNum.me(x, maxADD) then return x end
 	if ExpantaNum.me(y, maxADD) then return y end
 	if ExpantaNum.eq(x, ExpantaNum.neg(y)) then return ZERO end
-	
+
 	local min = ExpantaNum.min(x,y)
 	local max = ExpantaNum.max(x,y)
 	local magdif, mantissa
@@ -1228,7 +1242,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 		if math.abs(max.exponents[1] - math.log10(min.exponents[1])) > logMaxInt then return max end
 		magdif = 10 ^ (max.exponents[1] - math.log10(min.exponents[1]))
 		mantissa = min.sign + max.sign * magdif
-		
+
 		return ExpantaNum.correct({
 			sign = math.sign(mantissa),
 			exponents = {math.log10(min.exponents[1]) + math.log10(math.abs(mantissa)) , 1},
@@ -1239,7 +1253,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 		if math.abs(max.exponents[1] - min.exponents[1]) > logMaxInt then return max end
 		magdif = 10 ^ (max.exponents[1] - min.exponents[1])
 		mantissa = min.sign + max.sign * magdif
-		
+
 		return ExpantaNum.correct({
 			sign = math.sign(mantissa),
 			exponents = {min.exponents[1] + math.log10(math.abs(mantissa)) , 1},
