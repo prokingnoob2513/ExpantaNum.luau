@@ -12,7 +12,7 @@ local ExNum = require(path.to.ExpantaNum)
 
 **You can use metamethods, chaining functions for ExpantaNum<br>**
 
-Functions: correct, fromNumber, toNumber, toDisplay, toString, fromString, toExpanta, eq, le, me, meeq, leeq, abs, neg, cmp, max, min, bound, log10, isint, recip, pow, mod, root, mul, floor, ceil, div, add, sub, sqrt, log, exp, maxabs, pow10, gamma, fact, rand, exporand, toBigNum, toScientific, toShortScientific, short, toEnt, toShortEnt, toEs, toShortEs, toHyperE (only works IF num < 10{9007199254740992}10), toShortHyperE (only works IF num < 10{9007199254740992}10), lambertw, slog, pentlog, tetrate, pentate, arrow (only works IF x = 10), lbencode, lbdecode (soon), and more in the source code<br>
+Functions: correct, clone, fromNumber, toNumber, toDisplay, toString, fromString, toExpanta, eq, le, me, meeq, leeq, abs, neg, cmp, max, min, bound, log10, isint, recip, pow, mod, root, mul, floor, ceil, div, add, sub, sqrt, log, exp, maxabs, pow10, gamma, fact, rand, exporand, toBigNum, toScientific, toShortScientific, short, toEnt, toShortEnt, toEs, toShortEs, toHyperE (only works IF num < 10{9007199254740992}10), toShortHyperE (only works IF num < 10{9007199254740992}10), lambertw, slog, pentlog, tetrate, pentate, arrow (only works IF x = 10), lbencode, lbdecode (soon), and more in the source code<br>
 
 ExpantaTools Functions: OldLbencode, OldLbdecode, oom_difference, letter_format
 
