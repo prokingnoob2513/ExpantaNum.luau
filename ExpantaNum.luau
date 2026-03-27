@@ -37,7 +37,9 @@ cmp
 abs 
 neg 
 max 
-min 
+min
+minmax / bound (same function)
+
 log10 
 isint
 recip 
@@ -987,8 +989,13 @@ function ExpantaNum.min(val: ExpantaNum, val2: ExpantaNum): ExpantaNum
 		return val
 	end
 end
+
 function ExpantaNum.bound(num: ExpantaNum, min: ExpantaNum, max: ExpantaNum)
-	return ExpantaNum.min(min, ExpantaNum.max(max, num))
+	num, min, max = ExpantaNum.correct(num), ExpantaNum.correct(min), ExpantaNum.correct(max)
+	return ExpantaNum.min(max, ExpantaNum.max(min, num))
+end
+function ExpantaNum.minmax(num: ExpantaNum, min: ExpantaNum, max: ExpantaNum)
+	return ExpantaNum.bound(num, min, max)
 end
 
 function ExpantaNum.clone(val: ExpantaNum)
@@ -1015,7 +1022,7 @@ function ExpantaNum.log10(val: ExpantaNum)
 		)
 	end
 	if #val.exponents > 2 then return val end
-	
+
 	local val2 = ExpantaNum.clone(val)
 	val2.exponents[2] -= 1
 	return ExpantaNum.correct(val2)
@@ -1131,7 +1138,7 @@ function ExpantaNum.root(val, val2)
 			return ZERO
 		end
 	end
-	
+
 	return ExpantaNum.pow10(ExpantaNum.div(ExpantaNum.log10(val), val2))
 end
 
@@ -1202,12 +1209,12 @@ function ExpantaNum.div(val,val1)
 		end
 		return ZERO
 	end
-	
+
 	local FILTER1 = ExpantaNum.toNumber(val)/ExpantaNum.toNumber(val1)
 	if FILTER1 <= maxAllowed then
 		return ExpantaNum.correct(FILTER1)
 	end
-	
+
 	local qq = ExpantaNum.pow10( ExpantaNum.sub(ExpantaNum.log10(val),ExpantaNum.log10(val1)) )
 	local qqw = ExpantaNum.floor(qq)
 	if ExpantaNum.le(ExpantaNum.sub(qq,qqw), 1e-9) then
@@ -1222,13 +1229,14 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 
 	if ExpantaNum.eq(x, ZERO) then return y end
 	if ExpantaNum.eq(y, ZERO) then return x end
-	if ExpantaNum.me(x, maxADD) then return x end
-	if ExpantaNum.me(y, maxADD) then return y end
 	if ExpantaNum.eq(x, ExpantaNum.neg(y)) then return ZERO end
 
 	local min = ExpantaNum.min(x,y)
 	local max = ExpantaNum.max(x,y)
 	local magdif, mantissa
+	
+	if ExpantaNum.me(max, maxADD) then return max end
+	if ExpantaNum.me(min, maxADD) then return min end
 
 	if max.exponents[2] == nil and min.exponents[2] == nil then
 		return ExpantaNum.correct(min.sign * min.exponents[1] + max.sign * max.exponents[1])
@@ -1485,7 +1493,7 @@ function ExpantaNum.toEs(x: ExpantaNum): string
 		return "-" .. ExpantaNum.toEs(ExpantaNum.abs(x))
 	end
 	local estring = string.rep("e", x.exponents[2])
-	return estring .. Decimal(x[2][1],4)
+	return estring .. Decimal(x.exponents[1],4)
 end
 -- TODO: merge this with the func above
 function ExpantaNum.toShortEs(x): string
@@ -1504,7 +1512,7 @@ function ExpantaNum.toShortEs(x): string
 		return "-" .. ExpantaNum.toShortEs(ExpantaNum.abs(x))
 	end
 	local estring = string.rep("e", x.exponents[2])
-	return estring .. ExpantaNum.short(Decimal(x[2][1],4))
+	return estring .. ExpantaNum.short(Decimal(x.exponents[1],4))
 end
 
 function ExpantaNum.toHyperE(x: ExpantaNum, isShort): string
