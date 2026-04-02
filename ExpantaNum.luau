@@ -40,7 +40,6 @@ max
 min
 minmax / bound (same function)
 
-log10 
 isint
 recip 
 pow 
@@ -53,7 +52,11 @@ div
 add 
 sub 
 sqrt 
-log 
+
+log10 
+log
+ln
+
 exp 
 maxabs 
 pow10 
@@ -141,6 +144,8 @@ local maxPOW: ExpantaNum = construct_ExNum(1,{1,maxInt},1,0)
 local maxTETR: ExpantaNum = construct_ExNum(1,{10000000000,8,maxInt},2,0)
 local maxPENT: ExpantaNum = construct_ExNum(1,{10000000000,8,8,maxInt},3,0)
 local maxOPS = 69 -- max N elements in array, 69 recommended for speed
+
+ExpantaNum.MAX_SAFE_INT = maxInt
 
 --[[trunc = function (n)
 	if math.ceil(n) == n then return n end
@@ -470,19 +475,14 @@ function f_lambertw(z)
 end
 
 function Hlambertw(n)
-	local tol = 1e-10
 	n = ExpantaNum.correct(n)
-	local wn;
-	local w = ExpantaNum.log(n)
-	for i=1,100 do
-		wn = ExpantaNum.div(ExpantaNum.add(ExpantaNum.mul(n,ExpantaNum.exp(ExpantaNum.neg(w))),ExpantaNum.mul(w,w)),ExpantaNum.add(w,1))
-		if ExpantaNum.le(ExpantaNum.abs(ExpantaNum.sub(wn,w)), ExpantaNum.mul(tol,ExpantaNum.abs(wn))) then
-			return wn
-		end
-		w = wn
-	end
-	warn("Failed at hlam")
-	return NAN
+	if ExpantaNum.le(n, -0.3678794411714423) then return NAN end
+	if ExpantaNum.eq(n, 0) then return ZERO end
+	if ExpantaNum.eq(n, 1) then return ExpantaNum.correct(0.5671432904097839) end
+	local l1 = ExpantaNum.log(n)
+	local l2 = ExpantaNum.log(l1)
+	local approx = ExpantaNum.add(ExpantaNum.sub(l1, l2), ExpantaNum.div(l2, l1))
+	return approx
 end
 
 function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
@@ -1276,9 +1276,16 @@ function ExpantaNum.sqrt(x)
 	return ExpantaNum.root(x,2)
 end
 
-function ExpantaNum.log(x,y)
-	y = y or 2.7182818284590452353602874
-	return ExpantaNum.div(ExpantaNum.log10(x), ExpantaNum.log10(y))
+function ExpantaNum.log(n,base)
+	if base == 10 then
+		return ExpantaNum.log10(n)
+	end
+	base = base or 2.7182818284590452353602874
+	return ExpantaNum.div(ExpantaNum.log10(n), ExpantaNum.log10(base))
+end
+
+function ExpantaNum.ln(n)
+	return ExpantaNum.log(n)
 end
 
 function ExpantaNum.exp(x)
@@ -1568,7 +1575,7 @@ end
 function ExpantaNum.lambertw(x): ExpantaNum
 	x = ExpantaNum.correct(x)
 	if ExpantaNum.leeq(x,1e308) then
-		return f_lambertw(ExpantaNum.toNumber(x))
+		return ExpantaNum.correct(f_lambertw(ExpantaNum.toNumber(x)))
 	end
 	if ExpantaNum.me(x, maxPOW) then
 		return x
