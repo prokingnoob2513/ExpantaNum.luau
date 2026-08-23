@@ -5,14 +5,12 @@
 	Limit: 10{{1}}1.79e308
 	
 	Authors:
-	@prokingnoob2513 (roblox) / @numero.sloppen (discord)
+	@prokingnoob2513 (roblox) / @proking_noob2513 (discord)
 	@vikisvikis1234 (roblox) / @the_hamster_god (discord)
 	
 	Some code inspired by EternityNum
 	
-	"Boring" links!
 	https://github.com/prokingnoob2513/ExpantaNum.luau/tree/main
-	https://github.com/hamster624/ExpantaNum-extended.py
 ]]
 
 --[[
@@ -236,45 +234,21 @@ function Number.__tostring(x)
 end
 
 function Number.__eq(x,y)
-	local isXValid = false
-
-	if typeof(x) == "table" then
-		if x[2] == y[2] then
-			return true
-		end
-
-		if x[2] == x[2] then
-			isXValid = true
-		end
-	end
-	if isXValid then
-		local newX = ExpantaNum.toExpanta(x)
-		local newY = ExpantaNum.toExpanta(y)
-
-		local result = ExpantaNum.cmp(newX,newY)
-
-		return result == 0
-	else
-		return false
-	end
+	local result = ExpantaNum.eq(x,y)
+	
+	return result
 end
 
 function Number.__lt(x,y)
-	local newX = ExpantaNum.toExpanta(x)
-	local newY = ExpantaNum.toExpanta(y)
+	local result = ExpantaNum.le(x,y)
 
-	local result = ExpantaNum.cmp(newX,newY)
-
-	return result == -1
+	return result
 end
 
 function Number.__le(x,y)
-	local newX = ExpantaNum.toExpanta(x)
-	local newY = ExpantaNum.toExpanta(y)
+	local result = ExpantaNum.leeq(x,y)
 
-	local result = ExpantaNum.cmp(newX,newY)
-
-	return result == -1 or result == 0
+	return result
 end
 
 -- function __concat
@@ -373,7 +347,6 @@ end
 
 -- chaining functions inspired by alyanum
 -- autofilled by ChatGPT </3
--- adding metatable to functions later
 
 function Number:add(n) return setmetatable(ExpantaNum.add(self,n), Number) end
 function Number:sub(n) return setmetatable(ExpantaNum.sub(self,n), Number) end
@@ -493,7 +466,6 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 		val = construct_ExNum(val[1], val[2], val[3], val[4])
 	end
 	if val == nil then   return ZERO   end
-	if val ~= val then   return NAN    end
 	if val.sign == 0 then   return   ZERO   end
 
 	if type(val.exponents) ~= "table" then
@@ -936,10 +908,6 @@ end
 function ExpantaNum.cmp(val: ExpantaNum, val2: ExpantaNum): boolean -- 0 = eq, -1 = le, 1 = me
 	val = ExpantaNum.correct(val)
 	val2 = ExpantaNum.correct(val2)
-	local V1Nan = val ~= val
-	if V1Nan and val2 ~= val2 then return 0
-	elseif V1Nan or val2 ~= val2 then return 1
-	end
 
 	if val.sign == 1 and val2.sign ~= 1 then return val.sign end
 	if val.sign ~= 1 and val2.sign == 1 then return -val2.sign end
@@ -1234,7 +1202,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 	local min = ExpantaNum.min(x,y)
 	local max = ExpantaNum.max(x,y)
 	local magdif, mantissa
-	
+
 	if ExpantaNum.me(max, maxADD) then return max end
 	if ExpantaNum.me(min, maxADD) then return min end
 
@@ -1242,7 +1210,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 		return ExpantaNum.correct(min.sign * min.exponents[1] + max.sign * max.exponents[1])
 	end
 	if max.exponents[2] == 1 and min.exponents[2] == nil then
-		if math.abs(max.exponents[1] - math.log10(min.exponents[1])) > logMaxInt then return max end
+		if max.exponents[1] - math.log10(min.exponents[1]) >= logMaxInt then return max end
 		magdif = 10 ^ (max.exponents[1] - math.log10(min.exponents[1]))
 		mantissa = min.sign + max.sign * magdif
 
@@ -1253,7 +1221,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 			layer = 0,
 		})
 	else
-		if math.abs(max.exponents[1] - min.exponents[1]) > logMaxInt then return max end
+		if max.exponents[1] - min.exponents[1] >= logMaxInt then return max end
 		magdif = 10 ^ (max.exponents[1] - min.exponents[1])
 		mantissa = min.sign + max.sign * magdif
 
