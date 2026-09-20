@@ -495,7 +495,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	end
 
 	local function normalize()
-		while array[1] < logMaxInt and array[2] ~= 0 do
+		while array[1] < logMaxInt and (array[2] or 0) ~= 0 do
 			array[2] -= 1
 			array[1] = 10 ^ array[1]
 		end
