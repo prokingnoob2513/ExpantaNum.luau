@@ -465,9 +465,8 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	if not (val.sign and val.exponents and val.last and val.layer) then
 		val = construct_ExNum(val[1], val[2], val[3], val[4])
 	end
-	if val == nil then   return ZERO   end
-	if val.sign == 0 then   return   ZERO   end
-
+	if not val then return ZERO end
+	if val.sign == 0 then return ZERO end
 	if type(val.exponents) ~= "table" then
 		val = {
 			sign = val.sign,
@@ -476,187 +475,97 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 			layer = val.layer
 		}
 	end
-	if #val.exponents == 0 then
-		return ZERO
-	end
-	if val.exponents[1] == 0 or val.exponents[1] == nil then
-		return ZERO
-	end
+	if #val.exponents == 0 then return ZERO end
+	if val.exponents[1] == 0 or val.exponents[1] == nil then return ZERO end
 	if val.last and val.last < maxOPS then
 		val.last = #val.exponents - 1
 	end
 	-- {sign, {}, 0, 0}
 	local qq = table.clone(val)
-	local sign = qq.sign
+	qq.exponents = table.clone(val.exponents)
+
 	local array = qq.exponents
+	local sign = qq.sign
 	local last = qq.last
 	local layer = qq.layer
-	local len = #array
 
-	local function remove0s()
-		for i=len,1,-1 do
-			if array[i] == 0 or array[i] == nil then
-				table.remove(array)
-				len -= 1
-				last -= 1
-			else
-				break
-			end
-		end
-	end
-	remove0s()
-
-	if array[1] > maxInt then
-		array[1] = math.log10(array[1])
-		if len > 1 then
-			array[2] += 1
-		else
-			table.insert(array, 1)
-			--------------------------------------------------------------------------- TODO: el chamoy wall
-			if len < maxOPS then
-				len += 1
-			else
-				-- move iN -> iN-1, iN-1 -> iN-2, ... , i3 -> i2 and then delete the last element
-				for i=2,maxOPS,1 do array[i] = array[i+1] end
-				table.remove(array)
-				last += 1
-			end
-			--------------------------------------------------------------------------- el chamoy wall
-		end
+	if array[1] < 0 then
+		array[1] = -array[1]
+		sign = -1
 	end
 
-	-- handle 1,0,0,0,x
-	if len > 2 then
-		if array[2] < 3 then
-			for i=1,array[2] do
-				if array[i] >= logMaxInt then
-					break
-				elseif array[2] == 0 then
-					break
-				end
-				array[i] = 10^array[i]
-				array[2] -= 1
-			end 
-		end
-		if array[2] == 0 then
-			if array[1] == 1 then
-				for i=2,len do
-					if array[i] == 0 then
-						continue
-					elseif array[i] > 1 then
-						break
-					elseif array[i] == 1 and i == len then
-						return construct_ExNum(sign, 10, 0, 0) -- 0 or layer?
-					end
-				end 
-			end
-			local LastZero = 2
-			local OneEncountered = false
-			for i=3,#array do
-				if array[i] == 0 then
-					LastZero = i
-				elseif array[i] == 0 and OneEncountered then
-					continue
-				elseif array[i] == 1 and OneEncountered  then
-					break
-				elseif array[i] == 1  then
-					OneEncountered = true
-				else
-					break
-				end
-			end
-			if LastZero == len then
-				return construct_ExNum(sign, array[1], 0, 0) -- 0 or layer?
-			else
-				local Mode = 1
-				if array[1] == 1 then Mode = OneEncountered and 1 or 2 array[1] = 10 end
-				array[LastZero] = array[1] - 2
-				array[1] = 1e10
-				for i=2,LastZero - 1 do
-					array[i] = 8
-				end
-				array[LastZero + 1] -= Mode
-				for i=#array,2,-1 do
-					if array[i] == 0 then
-						array[i] = nil
-					else
-						break
-					end
-				end
-				-- Loop through LastZero
-				--return {sign, array}
-			end
-		end
-	end
-
-	len = #array
-	remove0s()
-
-	if len > 1 then
-		while array[1] < logMaxInt and (array[2] or 0) > 0 do
+	local function normalize()
+		while array[1] < logMaxInt and array[2] ~= 0 do
 			array[2] -= 1
-			array[1] = 10^array[1]
+			array[1] = 10 ^ array[1]
+		end
+
+		if array[1] > maxInt then
+			array[1] = math.log10(array[1])
+			array[2] = (array[2] or 0) + 1
 		end
 	end
-	for i=2,len do
-		if array[i]>maxInt then
-			array[1] = array[i]
-			array[i+1] = (array[i+1] or 0)+1
-			array[i]+=1
-			for j=2,i do
-				array[j] = 0
+
+	normalize()
+
+	for i=#array, 2, -1 do
+		if array[i] ~= 0 then break end
+		array[i] = nil
+	end
+
+	local len = #array
+	local found = false
+
+	for i = len, 2, -1 do
+		if array[i] < maxInt then continue end
+
+		if found then
+			array[i] = 0
+			continue
+		end
+
+		if i == len then
+			array[i + 1] = 1
+		else
+			array[i + 1] += 1
+		end
+
+		array[1] = math.log10(array[i])
+		array[2] = 1
+		array[i] = 0
+		found = true
+	end
+
+	if array[2] == 0 and #array > 2 then
+		for i = 3, #array do
+			if array[i] == 0 then continue end -- finds first non-zero num
+			array[i] -= 1
+
+			local value = math.floor(array[1] - 2)
+
+			for j=2, i - 1 do
+				array[j] = value
 			end
-			if array[1] > maxInt then
-				array[1] = math.log10(array[1])
-				array[2]+=1
-			end
+
+			array[1] = 1e10
+			if array[i] == 0 then array[i] = nil end
+
+			break
 		end
 	end
 
-	-- Convert trailing zeros
-	-- Remove trailing zeros
-	-- loop until
-	for i=1,#array do
-		local cur = array[i]
-		if cur == NAN then
-			warn('correct() returning NAN')
-			return qq
-		end
-		if cur==INF then
-			return qq
-		end
-		if cur % 1 ~= 0 and i~=1 then
-			array[i] = math.floor(cur)
-		end
+	normalize()
+
+	if last and last < maxOPS then
+		last = #array - 1
 	end
 
-	if not #array then qq.exponents = {0} end
-	-- if qq[3] > maxOPS then qq[3] -= 1 end do we need this
-
-	-- if last > maxint then increase layer by 1 and reset last to 1
 	if last > maxInt then
 		layer += 1
 		array = {math.log10(last), 1}
 		last = 1
 	end
-	-- convert back if possible
-	if layer > 0 then
-		if (array[1] or 0) < logMaxInt and (array[2] or 0) == 1 then
-			array[1] = 10^array[1]
-			array[2] = 0
-		end
-		if array[1] < maxInt and (array[2] or 0) == 0 then
-			layer -= 1
-			last = array[1]
-			array = {10}
-			for i=2,math.min(maxOPS,last)-1,1 do
-				table.insert(array, 0)
-			end
-			table.insert(array, 10)
-			-- Extremely ineffecient vro!
-		end
-	end
-	remove0s()
+
 	qq.exponents = array
 	qq.last = last
 	qq.layer = layer
@@ -981,9 +890,9 @@ end
 
 function ExpantaNum.log10(val: ExpantaNum)
 	val = ExpantaNum.correct(val)
-	
+
 	local val_num = ExpantaNum.toNumber(val)
-	
+
 	if val_num == 0 then return -INF end
 	if val_num < 0 then return NAN end
 	if val_num <= maxAllowed then return ExpantaNum.fromNumber(math.log10(val_num)) end
@@ -996,9 +905,9 @@ end
 
 function ExpantaNum.isint(val)
 	val = ExpantaNum.correct(val)
-	
+
 	local val_num = ExpantaNum.toNumber(val)
-	
+
 	if val.sign == -1 then return ExpantaNum.isint(ExpantaNum.abs(val)) end
 	if val_num >= maxInt then return true end
 	return val_num == math.floor(val_num)
@@ -1013,18 +922,18 @@ end
 function ExpantaNum.pow(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
-	
+
 	local x_num = ExpantaNum.toNumber(x)
 	local y_num = ExpantaNum.toNumber(y)
-	
+
 	local sign,sign2 = x.sign,y.sign
-	
+
 	if x_num == 0 then return ZERO end
 	if x_num < 0 and y_num == math.floor(y_num) then
 		if ExpantaNum.le(ExpantaNum.mod(y, 2), 1) then return ExpantaNum.pow(ExpantaNum.abs(x), y) end
 		return ExpantaNum.neg(ExpantaNum.pow(ExpantaNum.abs(x), y))
 	end
-	
+
 	if x_num == 1 then return ONE end
 	if y_num == 0 then return ONE end
 	if y_num < 0 then return ExpantaNum.recip(ExpantaNum.pow(x, ExpantaNum.neg(y))) end
@@ -1032,7 +941,7 @@ function ExpantaNum.pow(x: ExpantaNum, y: ExpantaNum)
 	if y_num < 1 then ExpantaNum.root(x,ExpantaNum.recip(y)) end
 	if ExpantaNum.meeq(ExpantaNum.max(x,y), maxPOW) then return ExpantaNum.max(x, y) end
 	if x_num == 10 then return ExpantaNum.pow10(y) end
-	
+
 	local n = x_num ^ y_num
 	if n <= maxAllowed then return ExpantaNum.fromNumber(n) end
 
@@ -1042,9 +951,9 @@ end
 function ExpantaNum.mod(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
-	
+
 	local sign,sign2 = x.sign,y.sign
-	
+
 	if ExpantaNum.toNumber(x) == 0 then return ZERO end
 	if sign*sign2 == -1 then return ExpantaNum.neg(ExpantaNum.mod(ExpantaNum.abs(x), ExpantaNum.abs(y))) end
 	if sign == -1 then return ExpantaNum.mod(ExpantaNum.abs(x), ExpantaNum.abs(y)) end
@@ -1054,10 +963,10 @@ end
 function ExpantaNum.root(x, y)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
-	
+
 	local x_num = ExpantaNum.toNumber(x)
 	local y_num = ExpantaNum.toNumber(y)
-	
+
 	if y_num == 1 then return x end
 	if y_num <= 0 then return ExpantaNum.recip(ExpantaNum.root(x, ExpantaNum.neg(y))) end
 	if y_num < 1 then return ExpantaNum.pow(x, ExpantaNum.recip(y)) end
@@ -1065,7 +974,7 @@ function ExpantaNum.root(x, y)
 	if x_num <= 0 then return NAN end
 	if x_num == 1 then return ONE end
 	if x_num == 0 then return ZERO end
-	
+
 	if ExpantaNum.me(ExpantaNum.max(x, y), maxPOW) then
 		if ExpantaNum.me(x, y) then return x end
 		return ZERO
@@ -1080,10 +989,10 @@ function ExpantaNum.mul(val,val1)
 
 	if x.sign * y.sign == -1 then return ExpantaNum.neg(ExpantaNum.mul(ExpantaNum.abs(x), ExpantaNum.abs(y))) end
 	if x.sign == -1 then return ExpantaNum.mul(ExpantaNum.abs(x),ExpantaNum.abs(y)) end
-	
+
 	local x_num = ExpantaNum.toNumber(x)
 	local y_num = ExpantaNum.toNumber(y)
-	
+
 	if x_num == 0 or y_num == 0 then return ZERO end
 	if x_num == 1 then return y end
 	if x_num == 1 then return x end
@@ -1121,10 +1030,10 @@ function ExpantaNum.div(x,y)
 	y = ExpantaNum.correct(y)
 	if x.sign * y.sign == -1 then return ExpantaNum.neg(ExpantaNum.div(ExpantaNum.abs(x), ExpantaNum.abs(y))) end
 	if x.sign == -1 then return ExpantaNum.div(ExpantaNum.abs(x),ExpantaNum.abs(y)) end
-	
+
 	local x_num = ExpantaNum.toNumber(x)
 	local y_num = ExpantaNum.toNumber(y)
-	
+
 	if y_num == 0 then return INF end
 	if y_num == 1 then return x end
 	if x_num == 0 then return ZERO end
@@ -1145,15 +1054,15 @@ end
 function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
-	
+
 	local x_num = ExpantaNum.toNumber(x)
 	local y_num = ExpantaNum.toNumber(y)
-	
+
 	if x_num == 0 then return y end
 	if y_num == 0 then return x end
-	
+
 	if x_num < 8e307 and y_num < 8e307 then return ExpantaNum.fromNumber(x_num + y_num) end
-	
+
 	if ExpantaNum.eq(x, ExpantaNum.neg(y)) then return ZERO end
 
 	local min = ExpantaNum.min(x,y)
@@ -1162,7 +1071,7 @@ function ExpantaNum.add(x: ExpantaNum, y: ExpantaNum)
 
 	if ExpantaNum.me(max, maxADD) then return max end
 	if ExpantaNum.me(min, maxADD) then return min end
-	
+
 
 	if max.exponents[2] == nil and min.exponents[2] == nil then
 		return ExpantaNum.correct(min.sign * min.exponents[1] + max.sign * max.exponents[1])
@@ -1221,13 +1130,13 @@ end
 
 function ExpantaNum.pow10(x)
 	local x_num = ExpantaNum.toNumber(x)
-	
+
 	if x_num == 0 then return ONE end
 	if x_num > 0 then
 		if x.exponents[2] then x.exponents[2] += 1
 		else x.exponents[2] = 1
 		end
-		
+
 		return ExpantaNum.correct(x)
 	else return ExpantaNum.fromNumber(10^x_num)
 	end
@@ -1599,10 +1508,10 @@ end
 function ExpantaNum.tetrate(x: ExpantaNum, y: ExpantaNum): ExpantaNum
 	x = ExpantaNum.correct(x)
 	y = ExpantaNum.correct(y)
-	
+
 	local x_num = ExpantaNum.toNumber(x)
 	local y_num = ExpantaNum.toNumber(y)
-	
+
 	if y_num <= -2 then return NAN end
 	if x_num == 0 then
 		if y_num == 0 then return NAN end
@@ -1929,6 +1838,8 @@ function ExpantaNum.lbdecode(num: number)
 			}, 2, 0
 		)
 	end -- UNFINISHED
+	
+	return INF
 end
 
 --------------------------------------------------------------------------------------------------------------------- credit to @hamster624 for this abomination
