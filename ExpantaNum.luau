@@ -1968,7 +1968,7 @@ function format(num, decimals, small)
 	local precision4 = math.max(6, decimals)
 	local num = tostring(ExpantaNum.correct(num))
 	local arr = {}
-	for v in string.gmatch(num, "-?%d+") do table.insert(arr, tonumber(v)) end
+	for v in string.gmatch(num, "-?%d+%.?%d*") do table.insert(arr, tonumber(v)) end
 	local arr3 = table.remove(arr)
 	local arr2 = table.remove(arr)
 	if arr[1] < 0 then return "-" .. format(ExpantaNum.correct(ExpantaNum.abs(num)), decimals)
