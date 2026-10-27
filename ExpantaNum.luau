@@ -84,12 +84,13 @@ lbdecode -- UNFINISHED
 ]]
 
 local amoes = 5
-local PrecisionDisplay = 3
+local PrecisionDisplay = 2
 local toScientific = 1e306
 local maxCommas = 6 -- Max available: 22 numbers with commas. Optimal: 3,6,9,12 number
 local maxArrows = 5 -- for toDisplay
 local maxEs = 10
 local maxHyperions = 10 -- for hyper-E notation
+local includeTrailingZeros = false
 
 ----------- END OF CONFIGURABLE DEFAULTS -------------
 
@@ -113,7 +114,7 @@ function construct_ExNum(sign_, exponents_, last_, layer_): ExpantaNum
 	exponents_ = exponents_ or 0
 	last_ = last_ or 0
 	layer_ = layer_ or 0
-	if typeof(exponents_) == "number" then
+	if type(exponents_) == "number" then
 		exponents_ = {exponents_}
 	end
 	local arr = {
@@ -141,6 +142,7 @@ local maxScientific: ExpantaNum = construct_ExNum(1,{300008,4},1,0)
 local maxPOW: ExpantaNum = construct_ExNum(1,{1,maxInt},1,0)
 local maxTETR: ExpantaNum = construct_ExNum(1,{10000000000,8,maxInt},2,0)
 local maxPENT: ExpantaNum = construct_ExNum(1,{10000000000,8,8,maxInt},3,0)
+local exINF: ExpantaNum = construct_ExNum(1,INF,0,0)
 local maxOPS = 69 -- max N elements in array, 69 recommended for speed
 
 ExpantaNum.MAX_SAFE_INT = maxInt
@@ -369,6 +371,7 @@ function Number:floor() return setmetatable(ExpantaNum.floor(self), Number) end
 function Number:ceil() return setmetatable(ExpantaNum.ceil(self), Number) end
 
 function Number:sqrt() return setmetatable(ExpantaNum.sqrt(self), Number) end
+function Number:cbrt() return setmetatable(ExpantaNum.cbrt(self), Number) end
 function Number:log(n) return setmetatable(ExpantaNum.log(self, n), Number) end
 function Number:ln() return setmetatable(ExpantaNum.log(self), Number) end
 function Number:exp() return setmetatable(ExpantaNum.exp(self), Number) end
@@ -466,7 +469,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 		val = construct_ExNum(val[1], val[2], val[3], val[4])
 	end
 	if not val then return ZERO end
-	if val.sign == 0 then return ZERO end
+	if val.sign == 0 or val.sign == -0 then return ZERO end
 	if type(val.exponents) ~= "table" then
 		val = {
 			sign = val.sign,
@@ -477,6 +480,7 @@ function ExpantaNum.correct(val: ExpantaNum): ExpantaNum
 	end
 	if #val.exponents == 0 then return ZERO end
 	if val.exponents[1] == 0 or val.exponents[1] == nil then return ZERO end
+	if val.exponents[1] == INF then return exINF end
 	if val.last and val.last < maxOPS then
 		val.last = #val.exponents - 1
 	end
@@ -576,9 +580,8 @@ function ExpantaNum.fromNumber(val: number): ExpantaNum
 	if type(val) ~= 'number' then
 		error('NAN input at fromNumber()')
 	end
-	if val == 0 then
-		return ZERO
-	end
+	if val == 0 then return ZERO end
+	if val == INF then return exINF end
 
 	local s = math.sign(val)
 	if val < maxInt then
@@ -624,7 +627,7 @@ function ExpantaNum.toDisplay(val: ExpantaNum, shorts: boolean): string
 	local sign, array, last, layer = val.sign, val.exponents, val.last, val.layer
 	local esign, layerstr = '', ''
 	if array[1] == NAN then return 'NaN' end
-	if array[1] > INF or layer > INF then return 'Infinity' end
+	if array[1] == INF or last == INF then return 'Infinity' end
 	if sign == 0 then return '0' end
 	if sign < 0 then esign = '-' end
 
@@ -646,6 +649,7 @@ function ExpantaNum.toDisplay(val: ExpantaNum, shorts: boolean): string
 		if shorts then
 			return short(array[1]*sign)
 		else
+			if includeTrailingZeros then return string.format("%.3f", Decimal(array[1])*sign) end
 			return Decimal(array[1])*sign
 		end
 	elseif last == 1 then
@@ -1108,6 +1112,10 @@ end
 
 function ExpantaNum.sqrt(x)
 	return ExpantaNum.root(x,2)
+end
+
+function ExpantaNum.cbrt(x)
+	return ExpantaNum.root(x,3)
 end
 
 function ExpantaNum.log(n,base)
@@ -2309,6 +2317,9 @@ function short(bnum)
 	local leftover = math.fmod(SNumber0, 3)
 	local SNumber = math.floor(SNumber0 / 3) - 1
 	if SNumber < -1 then
+		if includeTrailingZeros then
+			return string.format("%.3f", math.floor(bnumtofloat(bnum)*10^PrecisionDisplay + 0.000000001)/(10^PrecisionDisplay))
+		end
 		return math.floor(bnumtofloat(bnum)*10^PrecisionDisplay + 0.000000001)/(10^PrecisionDisplay)
 	end
 	local FirstOnes = {"", "U","D","T","Qd","Qn","Sx","Sp","Oc","No"}
