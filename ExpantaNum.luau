@@ -1846,7 +1846,7 @@ function ExpantaNum.lbdecode(num: number)
 			}, 2, 0
 		)
 	end -- UNFINISHED
-	
+
 	return INF
 end
 
@@ -1856,13 +1856,10 @@ local MAX_LOGP1_REPEATS = 48 -- dont change
 
 local function polarize(val, smallTop)
 	smallTop = smallTop or false
-	local str = tostring(ExpantaNum.correct(val))
-	local pairs = {}
-	for v in (str:match("^[^;]*") or ""):gmatch("%d+%.?%d*") do table.insert(pairs, tonumber(v)) end
+	local pairs = ExpantaNum.new(val).exponents
 	local bottom = pairs[1]
 	local top = 0
 	local height = 0
-
 	if #pairs <= 1 then
 		if smallTop then
 			while bottom >= 10 do
@@ -1902,11 +1899,9 @@ local function polarize(val, smallTop)
 			end
 			bottom = math.log10(bottom) + top
 			height = height + 1
-
 			if elem < #pairs and height > elem then
 				elem = elem + 1
 			end
-
 			if elem < #pairs then
 				if height == elem then
 					top = pairs[elem + 1] + 1
@@ -1928,10 +1923,8 @@ local function polarize(val, smallTop)
 			end
 		end
 	end
-
 	return {bottom, top, height+1}
 end
-
 local function comma_format(n)
 	local a,b = tostring(n):match("^(%-?%d+)(.*)$")
 	return a:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "") .. b
@@ -1959,19 +1952,17 @@ local function tableToString(t)
 	result = result .. "]"
 	return result
 end
-
 function format(num, decimals, small)
 	small = small or false
 	decimals = decimals or decimal
 	local precision2 = math.max(5, decimals)
 	local precision3 = math.max(4, decimals)
 	local precision4 = math.max(6, decimals)
-	local num = tostring(ExpantaNum.correct(num))
-	local arr = {}
-	for v in string.gmatch(num, "-?%d+%.?%d*") do table.insert(arr, tonumber(v)) end
-	local arr3 = table.remove(arr)
-	local arr2 = table.remove(arr)
-	if arr[1] < 0 then return "-" .. format(ExpantaNum.correct(ExpantaNum.abs(num)), decimals)
+	local num = ExpantaNum.new(num)
+	local arr = num.exponents
+
+	if num.sign == -1 then return "-" .. format(ExpantaNum.correct(ExpantaNum.abs(num)), decimals)
+
 	elseif ExpantaNum.le(num, "[0.0001];0;0") then
 		local inv = ExpantaNum.div(1, num)
 		return "1/" .. format(inv, decimals)
@@ -2034,8 +2025,7 @@ function format(num, decimals, small)
 	else
 		local pol = polarize(tableToString(arr), true)
 		local val = math.log10(pol[1]) + pol[2]
-		local j = comma_format(arr2)
-		return regular_format(val, precision4) .. "J" .. j
+		return regular_format(val, precision4) .. "J" .. comma_format(pol[3]-1)
 	end
 end
 local function slice(tbl, startIndex, endIndex)
@@ -2045,33 +2035,32 @@ local function slice(tbl, startIndex, endIndex)
 end
 function hyper_log(x, k)
 	k = ExpantaNum.toNumber(k)
-	x = tostring(ExpantaNum.correct(x))
-	local arr = {}
-	for v in x:gmatch("[-]?%d+%.?%d*") do table.insert(arr, tonumber(v)) end
-	local arr3 = table.remove(arr)
-	local arr2 = table.remove(arr)
-	if arr[1] < 0 then return "nil" -- cannot be negative
-	elseif arr3 ~= 0 then return x
-	elseif ExpantaNum.isint(k) then return "nil" -- must be an int
+	local num = ExpantaNum.correct(x)
+	local arr = num.exponents
+	if num.sign == -1 then return "nil" -- cannot be negative
+	elseif num.layer ~= 0 then return num
+	elseif k ~= math.floor(k) then return "nil" -- must be an int
 	elseif k <1 then return "nil" -- because k must be >= 1
-	elseif ExpantaNum.leeq(x, 10) then return ExpantaNum.correct(math.log10(ExpantaNum.toNumber(arr))) -- dont ask me why
-	elseif k == 1 then return ExpantaNum.log10(x)
+	elseif ExpantaNum.leeq(num, 10) then return ExpantaNum.correct(math.log10(ExpantaNum.toNumber(arr))) -- dont ask me why
+	elseif k == 1 then return ExpantaNum.log10(num)
 	end
-	local arr_len = arr2+2
-	local pol = polarize(tableToString(arr), true)
-	local start = math.log10(pol[1]) + pol[2]
-	for i=1, k-pol[3]-1 do start = math.log10(start)+1 end -- godly optimization here
-	if arr_len == k+1 then return ExpantaNum.correct(ExpantaNum.toNumber(hyper_log(table.move(arr, 1, k, 1, {}), k))+ arr[k+1])-- tf is this?!?!?!?
+
+	local arr_len = num.last+1
+	if arr_len == k+1 then return ExpantaNum.correct(ExpantaNum.toNumber(hyper_log(table.move(arr, 1, k, 1, {}), k)) + arr[k+1])-- tf is this?!?!?!?
 	elseif arr_len == k+2 then
 		local a = slice(arr, 0, k)
 		a[#a + 1] = arr[k+1]-1
 		return ExpantaNum.correct(a)
-	elseif arr_len > k+2 then return x
+	elseif arr_len > k+2 then return num
 	else
+		local pol = polarize(tableToString(arr), true)
+		print(pol)
+		local start = math.log10(pol[1]) + pol[2]
+		for i=1, k-pol[3] do start = math.log10(start)+1 end -- godly optimization here
+
 		return ExpantaNum.correct(start)
 	end
 end
-
 function ExpantaNum.hyperLog10(x, arrows)
 	return hyper_log(x, arrows)
 end
