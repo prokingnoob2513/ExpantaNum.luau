@@ -2312,7 +2312,7 @@ function short(bnum)
 		return math.floor(bnumtofloat(bnum)*10^PrecisionDisplay + 0.000000001)/(10^PrecisionDisplay)
 	end
 	local FirstOnes = {"", "U","D","T","Qd","Qn","Sx","Sp","Oc","No"}
-	local SecondOnes = {"", "Dc","Vg","Tg","qg","Qg","sg","Sg","Og","Ng"}
+	local SecondOnes = {"", "De","Vg","Tg","qg","Qg","sg","Sg","Og","Ng"}
 	local ThirdOnes = {"", "Ce", "Du","Tr","Qa","Qi","Se","Si","Ot","Ni"}
 	local MultOnes = {"", "Mi","Mc","Na","Pc","Fm","At","Zp","Yc", "Xo", "Ve", "Me", "Due", "Tre", "Te", "Pt", "He", "Hp", "Oct", "En", "Ic", "Mei", "Dui", "Tri", "Teti", "Pti", "Hei", "Hp", "Oci", "Eni", "Tra","TeC","MTc","DTc","TrTc","TeTc","PeTc","HTc","HpT","OcT","EnT","TetC","MTetc","DTetc","TrTetc","TeTetc","PeTetc","HTetc","HpTetc","OcTetc","EnTetc","PcT","MPcT","DPcT","TPCt","TePCt","PePCt","HePCt","HpPct","OcPct","EnPct","HCt","MHcT","DHcT","THCt","TeHCt","PeHCt","HeHCt","HpHct","OcHct","EnHct","HpCt","MHpcT","DHpcT","THpCt","TeHpCt","PeHpCt","HeHpCt","HpHpct","OcHpct","EnHpct","OCt","MOcT","DOcT","TOCt","TeOCt","PeOCt","HeOCt","HpOct","OcOct","EnOct","Ent","MEnT","DEnT","TEnt","TeEnt","PeEnt","HeEnt","HpEnt","OcEnt","EnEnt","Hect", "MeHect"}
 	if bnum[2] == INF then
