@@ -392,10 +392,10 @@ function Number:pentate(n) return setmetatable(ExpantaNum.pentate(self, n), Numb
 function Number:pent(n) return setmetatable(ExpantaNum.pentate(self, n), Number) end
 function Number:arrow(a, y) return setmetatable(ExpantaNum.arrow(self, a, y), Number) end
 
-function Number:lt(o) return ExpantaNum.le(self, o) end
-function Number:le(o) return ExpantaNum.leeq(self, o) end
-function Number:mt(o) return ExpantaNum.me(self, o) end
-function Number:me(o) return ExpantaNum.meeq(self, o) end
+function Number:le(o) return ExpantaNum.le(self, o) end
+function Number:leeq(o) return ExpantaNum.leeq(self, o) end
+function Number:me(o) return ExpantaNum.me(self, o) end
+function Number:meeq(o) return ExpantaNum.meeq(self, o) end
 
 --[[
 	Original ExpantaNum functions
